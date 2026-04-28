@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QM_BLACKBOX_v11</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══ QM TOKENS (sourced from tokens.css + style.css) ═══ */
+:root {
+  --bg-dark: #080808;
+  --text-main: #ffffff;
+  --text-dim: rgba(255,255,255,0.5);
+  --text-secondary: rgba(255,255,255,0.2);
+  --accent: #fbbf24;
+  --border-subtle: rgba(255,255,255,0.1);
+  --status-ok: rgba(80,220,140,0.9);
+  --status-fail: rgba(255,80,80,0.9);
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-head: 'Space Grotesk', sans-serif;
+  --ease-out: cubic-bezier(0.19,1,0.22,1);
+}
+
+/* ═══ RESET ═══ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; background:var(--bg-dark); color:var(--text-main); font-family:var(--font-mono); -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+
+/* ═══ CURSOR — CSS-only approach (no JS matchMedia needed) ═══ */
+@media (pointer: coarse) {
+  * { cursor: auto !important; }
+  #qm-cursor { display: none !important; }
+}
+@media (pointer: fine) {
+  * { cursor: none !important; }
+  #qm-cursor { display: block; }
+}
+
+#qm-cursor {
+  position:fixed; top:0; left:0; width:10px; height:10px;
+  background:#fff; border-radius:50%; pointer-events:none;
+  z-index:10000; mix-blend-mode:difference;
+  transform:translate(-50%,-50%);
+  transition:transform 0.08s ease-out;
+  will-change:transform;
+  display:none;
+}
+
+/* ═══ GRAIN + SCANLINES (from style.css) ═══ */
+body::before {
+  content:""; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:url('https://grainy-gradients.vercel.app/noise.svg');
+  opacity:0.045; pointer-events:none; z-index:9000;
+}
+body::after {
+  content:""; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:
+    linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.13) 50%),
+    linear-gradient(90deg,rgba(255,0,0,0.025),rgba(0,255,0,0.008),rgba(0,0,255,0.025));
+  background-size:100% 3px, 2px 100%;
+  pointer-events:none; z-index:9001;
+}
+
+/* ═══ VHS GLITCH (from style.css) ═══ */
+.glitch-active { animation:vhs-flash 0.15s steps(2) forwards; }
+@keyframes vhs-flash {
+  0%   { filter:hue-rotate(90deg) brightness(1.2); opacity:0.8; }
+  50%  { filter:contrast(1.5) saturate(1.5); opacity:1; }
+  100% { filter:none; opacity:1; }
+}
+
+/* ═══ LAYOUT ═══ */
+#app {
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-start;
+  padding:0; position:relative; z-index:10;
+}
+
+/* ═══ PHASE SYSTEM ═══ */
+.phase { display:none; width:100%; animation:fadeUp 0.4s var(--ease-out); }
+.phase.active { display:block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══ BOOT SCREEN — fullscreen centered ═══ */
+#phase-boot {
+  min-height:100vh; display:none;
+  align-items:center; justify-content:center; flex-direction:column;
+  padding:40px 20px;
+}
+#phase-boot.active { display:flex; }
+
+.boot-terminal {
+  width:100%; max-width:640px;
+  border:1px solid var(--border-subtle);
+  background:rgba(255,255,255,0.01);
+  position:relative; overflow:hidden;
+}
+.boot-terminal::before {
+  content:"SYS_LOG: active";
+  position:absolute; top:10px; right:14px;
+  font-size:8px; letter-spacing:0.15em; color:var(--text-secondary);
+}
+.boot-bar {
+  padding:10px 16px; border-bottom:1px solid var(--border-subtle);
+  font-size:9px; letter-spacing:0.25em; color:var(--text-secondary);
+}
+.boot-body {
+  padding:24px; min-height:220px; max-height:320px; overflow-y:auto;
+  font-size:11px; line-height:1.9;
+}
+.t-line { color:var(--text-dim); }
+.t-line.ok { color:rgba(80,220,140,0.7); }
+.t-line.warn { color:rgba(255,200,60,0.7); }
+.t-cursor::after { content:'▋'; animation:blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.boot-prog-wrap { padding:0 24px 20px; }
+.boot-prog-head {
+  display:flex; justify-content:space-between;
+  font-size:10px; letter-spacing:0.15em; color:var(--text-dim);
+  margin-bottom:8px;
+}
+.boot-prog-val { color:var(--text-main); }
+.boot-prog-bar { height:1px; background:var(--border-subtle); }
+.boot-prog-fill { height:100%; background:var(--text-main); transition:width 0.3s ease; }
+
+/* ═══ PHASE NAV (post-boot) ═══ */
+.phase-header {
+  width:100%; border-bottom:1px solid var(--border-subtle);
+  padding:16px 40px; display:flex; align-items:center; gap:32px; flex-wrap:wrap;
+}
+.phase-id {
+  font-size:9px; letter-spacing:0.3em; color:var(--text-secondary); white-space:nowrap;
+}
+.phase-tabs { display:flex; gap:clamp(12px,3vw,32px); flex-wrap:wrap; }
+.p-tab {
+  font-size:9px; letter-spacing:0.2em; color:var(--text-secondary);
+  text-transform:uppercase; opacity:0.4; transition:opacity 0.3s;
+  display:flex; align-items:center; gap:6px;
+}
+.p-tab.active { opacity:1; color:var(--text-main); }
+.p-tab.done { opacity:0.55; }
+.p-tab-dot {
+  width:5px; height:5px; border-radius:50%; background:var(--text-secondary); flex-shrink:0;
+}
+.p-tab.active .p-tab-dot { background:var(--text-main); box-shadow:0 0 6px rgba(255,255,255,0.4); }
+.p-tab.done .p-tab-dot { background:rgba(80,220,140,0.7); }
+
+/* ═══ CONTENT AREA ═══ */
+.content {
+  width:100%; max-width:900px; margin:0 auto;
+  padding:clamp(30px,6vw,60px) clamp(20px,5vw,60px);
+}
+
+/* ═══ TYPOGRAPHY (strict QM) ═══ */
+.meta-label {
+  font-size:9px; letter-spacing:0.35em; color:var(--text-secondary);
+  text-transform:uppercase; display:block; margin-bottom:14px;
+}
+.sec-title {
+  font-family:var(--font-head); font-weight:500; text-transform:uppercase;
+  letter-spacing:0.08em; font-size:clamp(18px,3.5vw,28px);
+  margin-bottom:32px; color:var(--text-main);
+}
+p { font-size:12px; line-height:1.7; color:var(--text-dim); }
+hr { border:none; border-top:1px solid var(--border-subtle); margin:28px 0; }
+
+/* ═══ BUTTONS (exact .opt-btn from style.css) ═══ */
+.opt-btn {
+  display:block; width:100%; padding:16px 20px;
+  background:transparent; border:1px solid var(--border-subtle);
+  color:var(--text-main); font-family:var(--font-mono); font-size:11px;
+  text-align:left; margin-bottom:12px; transition:all 0.2s ease;
+  white-space:normal; height:auto; line-height:1.4; word-wrap:break-word;
+  letter-spacing:0.08em; text-transform:uppercase;
+}
+.opt-btn:hover { background:var(--text-main); color:var(--bg-dark); }
+.opt-btn:disabled { opacity:0.25; pointer-events:none; }
+.btn-row { display:flex; gap:12px; margin-top:40px; flex-wrap:wrap; }
+.btn-row .opt-btn { width:auto; flex:1; min-width:120px; text-align:center; }
+
+/* ═══ NOTE BLOCK (plain, no color) ═══ */
+.note {
+  border-left:1px solid var(--border-subtle); padding:14px 18px;
+  margin:20px 0; font-size:11px; line-height:1.7; color:var(--text-dim);
+}
+
+/* ═══ DATA TABLE ═══ */
+.data-row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:12px 0; border-bottom:1px solid var(--border-subtle);
+  font-size:11px;
+}
+.data-row:last-child { border-bottom:none; }
+.data-key { color:var(--text-secondary); letter-spacing:0.1em; }
+.data-val { font-family:var(--font-mono); letter-spacing:0.05em; }
+.data-val.fail { color:var(--status-fail); }
+.data-val.ok { color:var(--status-ok); }
+.data-val.accent { color:var(--accent); }
+
+/* ═══ SLIDER ═══ */
+.slider-wrap { margin:28px 0; }
+.slider-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
+.slider-label { font-size:10px; letter-spacing:0.2em; color:var(--text-dim); text-transform:uppercase; }
+.slider-val { font-size:20px; font-family:var(--font-mono); color:var(--text-main); }
+input[type=range] {
+  width:100%; height:1px; background:var(--border-subtle);
+  border-radius:0; outline:none; -webkit-appearance:none; appearance:none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:12px; height:12px;
+  background:var(--text-main); border-radius:50%; cursor:none;
+}
+
+/* ═══ SVG CONTAINERS ═══ */
+.svg-wrap { margin:32px 0; }
+.topo-svg { width:100%; display:block; overflow:visible; }
+
+/* ═══ SPLIT SCREEN ═══ */
+.split { display:grid; grid-template-columns:1fr 1fr; gap:1px; margin:32px 0; background:var(--border-subtle); }
+@media(max-width:600px) { .split { grid-template-columns:1fr; } }
+.split-panel { padding:28px; background:var(--bg-dark); }
+.split-label {
+  font-size:9px; letter-spacing:0.25em; text-transform:uppercase;
+  margin-bottom:20px; display:block;
+}
+.split-label.fail { color:var(--status-fail); }
+.split-label.ok { color:var(--status-ok); }
+.split-svg { width:100%; display:block; }
+
+/* ═══ STATUS TERMINAL ═══ */
+.status-term {
+  border:1px solid var(--border-subtle); padding:20px; margin:28px 0;
+  font-size:10px; line-height:2; letter-spacing:0.05em;
+}
+.s-ok { color:rgba(80,220,140,0.6); }
+.s-fail { color:rgba(255,80,80,0.6); }
+.s-wait { color:rgba(255,200,60,0.5); }
+.s-dim { color:var(--text-secondary); }
+
+/* ═══ CONTACT GRID ═══ */
+.contact-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1px; background:var(--border-subtle); margin:32px 0;
+}
+.contact-cell { padding:28px; background:var(--bg-dark); }
+.contact-cell-label { font-size:9px; letter-spacing:0.25em; color:var(--text-secondary); text-transform:uppercase; margin-bottom:12px; display:block; }
+.contact-cell-val { font-size:12px; line-height:1.7; color:var(--text-dim); }
+.contact-cell-val a { color:var(--text-main); text-decoration:none; }
+.contact-cell-val a:hover { text-decoration:underline; }
+
+/* ═══ STATEMENT ═══ */
+.statement {
+  text-align:center; padding:50px 30px; border:1px solid var(--border-subtle);
+  margin:32px 0;
+}
+.statement p { font-size:clamp(13px,2vw,16px); max-width:540px; margin:0 auto; line-height:1.8; font-weight:300; }
+
+/* ═══ KEYFRAMES FOR SVG ═══ */
+@keyframes photon { 0%{stroke-dashoffset:300} 100%{stroke-dashoffset:0} }
+@keyframes photon-fast { 0%{stroke-dashoffset:200} 100%{stroke-dashoffset:0} }
+@keyframes scatter { 0%,100%{opacity:0.5} 50%{opacity:0.05} }
+@keyframes pulse-ring { 0%{r:14;opacity:0.7} 100%{r:26;opacity:0} }
+@keyframes node-heal { from{fill:rgba(255,80,80,0.8)} to{fill:rgba(80,220,140,0.7)} }
+</style>
+</head>
+<body>
+
+<div id="qm-cursor"></div>
+
+<div id="app">
+
+  <!-- ═══ PHASE: BOOT ═══ -->
+  <div class="phase active" id="phase-boot" style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:40px 20px;">
+    <div class="boot-terminal" style="width:100%;max-width:640px;">
+      <div class="boot-bar">[ QM_BLACKBOX_v11 — DIAGNOSTIKA.SYS ]</div>
+      <div class="boot-body" id="boot-body"></div>
+      <div class="boot-prog-wrap">
+        <div class="boot-prog-head">
+          <span>BOOT_SEQUENCE</span>
+          <span class="boot-prog-val" id="boot-pct">0%</span>
+        </div>
+        <div class="boot-prog-bar"><div class="boot-prog-fill" id="boot-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ POST-BOOT WRAPPER ═══ -->
+  <div id="main-wrap" style="display:none;width:100%;flex-direction:column;align-items:center;">
+
+    <!-- Phase nav header -->
+    <div class="phase-header">
+      <span class="phase-id" id="phase-id-label">[ FÁZE_01 ]</span>
+      <div class="phase-tabs">
+        <div class="p-tab active" id="tab-0"><div class="p-tab-dot"></div><span>Topologie</span></div>
+        <div class="p-tab" id="tab-1"><div class="p-tab-dot"></div><span>ROI</span></div>
+        <div class="p-tab" id="tab-2"><div class="p-tab-dot"></div><span>Restrukturalizace</span></div>
+        <div class="p-tab" id="tab-3"><div class="p-tab-dot"></div><span>Quiet Module</span></div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 0: TOPOLOGIE ═══ -->
+    <div class="phase active" id="phase-0">
+      <div class="content">
+        <span class="meta-label">[ FÁZE_01 — DYNAMICKÁ_TOPOLOGIE ]</span>
+        <h2 class="sec-title" id="h-topo">Síťová Mapa Ekosystému</h2>
+
+        <p>171 uzlů. Bez architektury. Data unikají na okrajích dřív, než dorazí k uživateli.</p>
+
+        <div class="note">
+          <strong>TOPOLOGIE</strong> — Každý uzel je stránka, doména nebo služba. Spojnice jsou datové cesty. Červené uzly jsou kritické vstupní brány s latencí přes 10 sekund — na jejich okrajích fotony (data) unikají do prázdna místo k uživateli.
+        </div>
+
+        <div class="svg-wrap">
+          <svg id="svg-chaos" class="topo-svg" viewBox="0 0 700 460"></svg>
+        </div>
+
+        <div style="margin:24px 0;">
+          <div class="data-row"><span class="data-key">UZLŮ V SÍTI</span><span class="data-val accent">171</span></div>
+          <div class="data-row"><span class="data-key">KRITICKÉ VSTUPNÍ BRÁNY</span><span class="data-val fail">5–8</span></div>
+          <div class="data-row"><span class="data-key">LATENCE HLAVNÍHO KONTEJNERU</span><span class="data-val fail">12,8s</span></div>
+          <div class="data-row"><span class="data-key">STRUKTURÁLNÍ ANOMÁLIE</span><span class="data-val fail">436</span></div>
+          <div class="data-row"><span class="data-key">PRŮMYSLOVÝ STANDARD LCP</span><span class="data-val">&lt;2,5s</span></div>
+        </div>
+
+        <div class="note">
+          <strong>Akamai, 2024:</strong> 100ms zpoždění = −7% konverze &nbsp;|&nbsp; <strong>Google CWV:</strong> LCP &gt;4s = penalizace rankingu
+        </div>
+
+        <div class="btn-row">
+          <button class="opt-btn" onclick="nextPhase()">[ SIMULÁTOR_ROI → ]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 1: ROI SIMULATOR ═══ -->
+    <div class="phase" id="phase-1">
+      <div class="content">
+        <span class="meta-label">[ FÁZE_02 — DESTRUKCE_MEDIÁLNÍ_INVESTICE ]</span>
+        <h2 class="sec-title" id="h-roi">Simulátor ROI</h2>
+
+        <p>Vizualizace efektivity marketingového rozpočtu při stávajícím technickém stavu. Nejde o cenu vývoje — jde o to, kolik z vaší kampaně skutečně dorazí k lidem.</p>
+
+        <div class="slider-wrap">
+          <div class="slider-head">
+            <span class="slider-label">Rozpočet kampaně</span>
+            <span class="slider-val"><span id="sv">150</span>k Kč</span>
+          </div>
+          <input type="range" min="50000" max="1000000" step="10000" value="150000" id="roi-slider" oninput="updateROI()">
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-secondary);margin-top:6px;letter-spacing:0.1em;"><span>50k</span><span>1 000k</span></div>
+        </div>
+
+        <hr>
+
+        <div id="funnel-svg-wrap" class="svg-wrap">
+          <svg id="svg-funnel" viewBox="0 0 600 300" style="width:100%;display:block;"></svg>
+        </div>
+
+        <div style="margin:24px 0;">
+          <div class="data-row"><span class="data-key">INVESTICE DO KAMPANĚ</span><span class="data-val" id="r-in">150k Kč</span></div>
+          <div class="data-row"><span class="data-key">PO LATENCI 12,8s (−60%)</span><span class="data-val fail" id="r-40">60k Kč</span></div>
+          <div class="data-row"><span class="data-key">PO 436 BARIÉRÁCH (−80%)</span><span class="data-val fail" id="r-8">12k Kč</span></div>
+          <div class="data-row"><span class="data-key">REÁLNÁ EFEKTIVITA</span><span class="data-val fail">8%</span></div>
+          <div class="data-row"><span class="data-key">INVESTICE DO VAKUA</span><span class="data-val fail" id="r-lost">138k Kč</span></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
+          <button class="opt-btn" onclick="nextPhase()">[ RESTRUKTURALIZACE → ]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 2: SPLIT-SCREEN HEALING ═══ -->
+    <div class="phase" id="phase-2">
+      <div class="content">
+        <span class="meta-label">[ FÁZE_03 — DELTA_ANALÝZA ]</span>
+        <h2 class="sec-title" id="h-delta">Stávající Stav vs. Po Inicializaci</h2>
+
+        <p>Stejný rozpočet. Radikálně odlišný výsledek. Vlevo: systém bez zásahu. Vpravo: po Technické Inicializaci Průchodnosti (14 dní).</p>
+
+        <div class="split" style="margin-top:32px;">
+          <div class="split-panel">
+            <span class="split-label fail">[ AKTUÁLNÍ_STAV ]</span>
+            <svg id="svg-broken" class="split-svg" viewBox="0 0 320 260"></svg>
+          </div>
+          <div class="split-panel">
+            <span class="split-label ok">[ PO_INICIALIZACI ]</span>
+            <svg id="svg-healed" class="split-svg" viewBox="0 0 320 260"></svg>
+          </div>
+        </div>
+
+        <div style="margin:24px 0;">
+          <div class="data-row"><span class="data-key">LATENCE — PŘED</span><span class="data-val fail">12,8s</span></div>
+          <div class="data-row"><span class="data-key">LATENCE — PO</span><span class="data-val ok">&lt;2,5s</span></div>
+          <div class="data-row"><span class="data-key">EFEKTIVITA KAMPANĚ — PŘED</span><span class="data-val fail">8%</span></div>
+          <div class="data-row"><span class="data-key">EFEKTIVITA KAMPANĚ — PO</span><span class="data-val ok">~95%</span></div>
+          <div class="data-row"><span class="data-key">REÁLNÝ DOSAH (z <span id="delta-bud">150k</span>) — PŘED</span><span class="data-val fail" id="delta-before">12k Kč</span></div>
+          <div class="data-row"><span class="data-key">REÁLNÝ DOSAH — PO</span><span class="data-val ok" id="delta-after">143k Kč</span></div>
+          <div class="data-row"><span class="data-key">DELTA</span><span class="data-val accent" id="delta-diff">+131k Kč</span></div>
+        </div>
+
+        <div class="status-term">
+          <div class="s-fail">[ SYSTÉM ]&nbsp;&nbsp;&nbsp;&nbsp;STAV: NON-OPERATIONAL</div>
+          <div class="s-ok"  >&nbsp;[ FÁZE_01 ]&nbsp;&nbsp;KOMPLETNÍ — diagnostika aktivní</div>
+          <div class="s-wait">[ FÁZE_02 ]&nbsp;&nbsp;ČEKAJÍCÍ — inicializace průchodnosti</div>
+          <div class="s-wait">[ FÁZE_03 ]&nbsp;&nbsp;BLOKOVANÁ — prerekvizita: Fáze 02</div>
+          <div class="s-wait">[ FÁZE_04 ]&nbsp;&nbsp;BLOKOVANÁ — prerekvizita: Fáze 02</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
+          <button class="opt-btn" onclick="nextPhase()">[ QUIET_MODULE → ]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 3: QM FINALE ═══ -->
+    <div class="phase" id="phase-3">
+      <div class="content">
+        <span class="meta-label">[ FÁZE_04 — QUIET_MODULE — STABILIZACE ]</span>
+        <h2 class="sec-title" id="h-qm">Zde Začíná Stabilita</h2>
+
+        <div class="statement">
+          <p>Diagnostika identifikovala příčinu. Systém je hermeticky uzavřen vůči marketingovému úsilí. Quiet Module přebírá kontrolu nad infrastrukturou, aby měla pevný základ — a aby každá investovaná koruna skutečně dorazila k lidem.</p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-cell">
+            <span class="contact-cell-label">Architekt</span>
+            <div class="contact-cell-val">Adam Kučaba<br>Quiet Module</div>
+          </div>
+          <div class="contact-cell">
+            <span class="contact-cell-label">Co se provede</span>
+            <div class="contact-cell-val">Technická Inicializace Průchodnosti (14 dní). Vyčištění 436 anomálií, latence pod 2,5s, logika transferu domén.</div>
+          </div>
+          <div class="contact-cell">
+            <span class="contact-cell-label">Kontakt</span>
+            <div class="contact-cell-val">
+              <a href="tel:+420721467555">+420 721 467 555</a><br>
+              <a href="mailto:hello@quietmodule.cz">hello@quietmodule.cz</a>
+            </div>
+          </div>
+          <div class="contact-cell">
+            <span class="contact-cell-label">Výsledek</span>
+            <div class="contact-cell-val">Systém schopný nést mediální kampaně s ~95% účinností. Základ pro aktivaci všech směrů.</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
+          <a href="mailto:hello@quietmodule.cz?subject=QM%20Inicializace&body=Dobrý%20den%2C%0Azahajuji%20poptávku%20na%20Technickou%20Inicializaci%20Průchodnosti." class="opt-btn" style="text-align:center;text-decoration:none;">[ AUTORIZOVAT_INICIALIZACI → ]</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-wrap -->
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CURSOR
+══════════════════════════════════════════════════════ */
+(function() {
+  const mq = window.matchMedia('(pointer: fine)');
+  if (!mq.matches) return;
+  const cur = document.getElementById('qm-cursor');
+  let mx = 0, my = 0;
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cur.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+  });
+})();
+
+/* ══════════════════════════════════════════════════════
+   SCRAMBLE (from main.js)
+══════════════════════════════════════════════════════ */
+function scrambleText(el, text) {
+  const chars = "!<>-_\\/[]{}—=+*^?#________";
+  const original = text || el.innerText;
+  let iteration = 0;
+  clearInterval(el._scramble);
+  el._scramble = setInterval(() => {
+    el.innerText = original.split("").map((char, index) => {
+      if (index < iteration) return original[index];
+      return chars[Math.floor(Math.random() * chars.length)];
+    }).join("");
+    if (iteration >= original.length) clearInterval(el._scramble);
+    iteration += 1 / 1.5;
+  }, 22);
+}
+
+function scrambleAll() {
+  document.querySelectorAll('.sec-title').forEach(el => {
+    if (el.closest('.phase.active')) scrambleText(el);
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   GLITCH TRANSITION (from style.css)
+══════════════════════════════════════════════════════ */
+function glitchTransition(cb) {
+  document.body.classList.add('glitch-active');
+  setTimeout(() => {
+    cb();
+    setTimeout(() => document.body.classList.remove('glitch-active'), 80);
+  }, 50);
+}
+
+/* ══════════════════════════════════════════════════════
+   PHASE STATE
+══════════════════════════════════════════════════════ */
+let currentPhase = 0;
+let savedBudget = 150000;
+let topoBuilt = false;
+let splitBuilt = false;
+
+const phaseLabels = ['FÁZE_01','FÁZE_02','FÁZE_03','FÁZE_04'];
+
+function showPhase(n) {
+  document.querySelectorAll('.phase').forEach((el,i) => {
+    el.classList.toggle('active', i === n);
+  });
+  document.querySelectorAll('.p-tab').forEach((el,i) => {
+    el.classList.remove('active','done');
+    if (i===n) el.classList.add('active');
+    else if (i<n) el.classList.add('done');
+  });
+  document.getElementById('phase-id-label').textContent = `[ ${phaseLabels[n]} ]`;
+  window.scrollTo({top:0,behavior:'smooth'});
+  setTimeout(scrambleAll, 60);
+
+  if (n===0 && !topoBuilt) { buildChaosTopology('svg-chaos',700,460,false); topoBuilt=true; }
+  if (n===2 && !splitBuilt) {
+    buildChaosTopology('svg-broken',320,260,false,true);
+    buildHealedTopology('svg-healed',320,260);
+    splitBuilt=true;
+  }
+  syncDelta();
+}
+
+function nextPhase() {
+  if (currentPhase < 3) {
+    glitchTransition(() => { currentPhase++; showPhase(currentPhase); });
+  }
+}
+
+function prevPhase() {
+  if (currentPhase > 0) {
+    glitchTransition(() => { currentPhase--; showPhase(currentPhase); });
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   TOPOLOGY GENERATOR — CHAOS (No center, organic scatter)
+══════════════════════════════════════════════════════ */
+function buildChaosTopology(svgId, W, H, healed, mini) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const N = mini ? 60 : 171;
+  const critCount = mini ? 4 : 7;
+  const nodes = [];
+  const rng = seededRng(42);
+
+  // Generate organically scattered nodes — polar with random jitter
+  // NO central hub — just distributed clusters
+  const clusters = [
+    {cx: W*0.25, cy: H*0.3, r: W*0.18},
+    {cx: W*0.7,  cy: H*0.25, r: W*0.14},
+    {cx: W*0.55, cy: H*0.65, r: W*0.16},
+    {cx: W*0.2,  cy: H*0.7,  r: W*0.13},
+    {cx: W*0.85, cy: H*0.6,  r: W*0.12},
+  ];
+
+  for (let i = 0; i < N; i++) {
+    const cluster = clusters[Math.floor(rng() * clusters.length)];
+    const angle = rng() * Math.PI * 2;
+    // Non-uniform radial distribution — more nodes near edges of cluster
+    const radius = cluster.r * (0.2 + rng() * 0.85);
+    const x = cluster.cx + radius * Math.cos(angle) + (rng()-0.5)*20;
+    const y = cluster.cy + radius * Math.sin(angle) + (rng()-0.5)*20;
+    // Critical nodes: near the outer boundary of the canvas
+    const distFromEdge = Math.min(x, y, W-x, H-y);
+    const isCritical = i < critCount && distFromEdge < W * 0.25;
+    nodes.push({
+      x: Math.max(10, Math.min(W-10, x)),
+      y: Math.max(10, Math.min(H-10, y)),
+      critical: isCritical || (i < critCount && distFromEdge < W*0.3)
+    });
+  }
+
+  // Force critical nodes toward edges
+  for (let i = 0; i < critCount; i++) {
+    const angle = (i / critCount) * Math.PI * 2 + rng() * 0.8;
+    const r = Math.min(W,H) * (0.38 + rng()*0.08);
+    nodes[i].x = Math.max(15, Math.min(W-15, W/2 + r * Math.cos(angle)));
+    nodes[i].y = Math.max(15, Math.min(H-15, H/2 + r * Math.sin(angle)));
+    nodes[i].critical = true;
+  }
+
+  // Build edges: each node connects to 2–4 nearest neighbors (NOT all to center)
+  const edges = [];
+  for (let i = 0; i < N; i++) {
+    const dists = [];
+    for (let j = 0; j < N; j++) {
+      if (i===j) continue;
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      dists.push({j, d: Math.sqrt(dx*dx+dy*dy)});
+    }
+    dists.sort((a,b)=>a.d-b.d);
+    const connectCount = 2 + Math.floor(rng()*2); // 2–3 neighbors
+    for (let k = 0; k < connectCount && k < dists.length; k++) {
+      const key = [Math.min(i,dists[k].j), Math.max(i,dists[k].j)].join('-');
+      if (!edges.find(e=>e.key===key)) {
+        edges.push({key, a:i, b:dists[k].j});
+      }
+    }
+  }
+
+  let html = '';
+
+  // Scatter lines from critical nodes (data leaking into void)
+  nodes.forEach((n, i) => {
+    if (!n.critical) return;
+    // 3 escape rays going outward from the node
+    const outAngle = Math.atan2(n.y - H/2, n.x - W/2);
+    for (let s = -1; s <= 1; s++) {
+      const a = outAngle + s * 0.5;
+      const len = 30 + s*10 + rng()*20;
+      const ex = n.x + len * Math.cos(a);
+      const ey = n.y + len * Math.sin(a);
+      html += `<line x1="${n.x}" y1="${n.y}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"
+        stroke="rgba(255,80,80,0.25)" stroke-width="0.8"
+        stroke-dasharray="2 8"
+        style="animation:scatter ${1.8+s*0.3}s ease-in-out ${Math.abs(s)*0.2}s infinite"/>`;
+    }
+  });
+
+  // Edges
+  edges.forEach(({a,b}) => {
+    const na = nodes[a], nb = nodes[b];
+    const isCrit = na.critical || nb.critical;
+    const delay = (rng()*3).toFixed(2);
+    const dur = (1.5 + rng()*1.5).toFixed(2);
+    html += `<line x1="${na.x.toFixed(1)}" y1="${na.y.toFixed(1)}" x2="${nb.x.toFixed(1)}" y2="${nb.y.toFixed(1)}"
+      stroke="${isCrit?'rgba(255,80,80,0.2)':'rgba(255,255,255,0.06)'}" stroke-width="${isCrit?'0.8':'0.5'}"/>`;
+    // Photon on edge
+    const edgeLen = Math.hypot(nb.x-na.x, nb.y-na.y);
+    html += `<line x1="${na.x.toFixed(1)}" y1="${na.y.toFixed(1)}" x2="${nb.x.toFixed(1)}" y2="${nb.y.toFixed(1)}"
+      stroke="${isCrit?'rgba(255,80,80,0.7)':'rgba(255,255,255,0.35)'}"
+      stroke-width="${isCrit?1.5:1}"
+      stroke-dasharray="${isCrit?'5 '+edgeLen:'3 '+edgeLen}"
+      stroke-dashoffset="${edgeLen}"
+      style="animation:${isCrit?'photon-fast':'photon'} ${dur}s linear ${delay}s infinite"/>`;
+  });
+
+  // Nodes
+  nodes.forEach((n, i) => {
+    if (n.critical) {
+      html += `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="12" fill="none"
+        stroke="rgba(255,80,80,0.3)" stroke-width="0.8"
+        style="animation:pulse-ring 2.5s ease-out ${(i*0.35%2).toFixed(2)}s infinite"/>`;
+      html += `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="5"
+        fill="rgba(255,80,80,0.75)" stroke="rgba(255,80,80,0.9)" stroke-width="0.5"
+        style="filter:drop-shadow(0 0 4px rgba(255,80,80,0.5))"/>`;
+    } else {
+      const sz = mini ? 2.5 : (i < 30 ? 3.5 : 2);
+      html += `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${sz}"
+        fill="rgba(255,255,255,${0.08 + rng()*0.12})" stroke="rgba(255,255,255,0.15)" stroke-width="0.3"/>`;
+    }
+  });
+
+  svg.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOPOLOGY GENERATOR — HEALED (ordered, golden core)
+══════════════════════════════════════════════════════ */
+function buildHealedTopology(svgId, W, H) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const N = 60;
+  const cx = W/2, cy = H/2;
+  const nodes = [];
+  const rng = seededRng(42);
+
+  // Healed = geometric rings with slight jitter (ordered but organic)
+  // Central golden hub
+  nodes.push({x:cx, y:cy, core:true});
+
+  // Ring 1: 8 nodes tight
+  for (let i=0;i<8;i++) {
+    const a = (i/8)*Math.PI*2;
+    nodes.push({x:cx+55*Math.cos(a)+(rng()-0.5)*6, y:cy+50*Math.sin(a)+(rng()-0.5)*6});
+  }
+  // Ring 2: 16 nodes
+  for (let i=0;i<16;i++) {
+    const a = (i/16)*Math.PI*2 + 0.2;
+    nodes.push({x:cx+105*Math.cos(a)+(rng()-0.5)*8, y:cy+95*Math.sin(a)+(rng()-0.5)*8});
+  }
+  // Ring 3: 35 nodes outer
+  for (let i=0;i<35;i++) {
+    const a = (i/35)*Math.PI*2 + 0.1;
+    nodes.push({x:cx+148*Math.cos(a)+(rng()-0.5)*7, y:cy+130*Math.sin(a)+(rng()-0.5)*7});
+  }
+
+  let html = '';
+
+  // Edges: hub to ring1, ring1 to ring2 etc. — clean connections
+  for (let i=1;i<=8;i++) {
+    const n=nodes[i];
+    const delay=(i*0.25).toFixed(2);
+    html+=`<line x1="${cx}" y1="${cy}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
+      stroke="rgba(80,220,140,0.3)" stroke-width="0.8"/>`;
+    html+=`<line x1="${cx}" y1="${cy}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
+      stroke="rgba(80,220,140,0.8)" stroke-width="1.2"
+      stroke-dasharray="4 120" stroke-dashoffset="120"
+      style="animation:photon-fast 1.2s linear ${delay}s infinite"/>`;
+  }
+  for (let i=9;i<=24;i++) {
+    const n=nodes[i];
+    const parent=nodes[1+(i-9)%8];
+    const delay=((i-9)*0.12).toFixed(2);
+    html+=`<line x1="${parent.x.toFixed(1)}" y1="${parent.y.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
+      stroke="rgba(80,220,140,0.2)" stroke-width="0.5"/>`;
+    html+=`<line x1="${parent.x.toFixed(1)}" y1="${parent.y.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
+      stroke="rgba(80,220,140,0.6)" stroke-width="0.8"
+      stroke-dasharray="3 100" stroke-dashoffset="100"
+      style="animation:photon 1.8s linear ${delay}s infinite"/>`;
+  }
+  for (let i=25;i<N && i<nodes.length;i++) {
+    const n=nodes[i];
+    const parent=nodes[9+(i-25)%16];
+    html+=`<line x1="${parent.x.toFixed(1)}" y1="${parent.y.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
+      stroke="rgba(80,220,140,0.15)" stroke-width="0.4"/>`;
+  }
+
+  // Nodes
+  nodes.forEach(n => {
+    if (n.core) {
+      html+=`<circle cx="${cx}" cy="${cy}" r="10" fill="rgba(251,191,36,0.85)"
+        style="filter:drop-shadow(0 0 8px rgba(251,191,36,0.4))"/>`;
+    } else {
+      html+=`<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="3"
+        fill="rgba(80,220,140,0.6)" stroke="rgba(80,220,140,0.4)" stroke-width="0.4"/>`;
+    }
+  });
+
+  svg.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════════
+   SEEDED RNG (deterministic — same layout every render)
+══════════════════════════════════════════════════════ */
+function seededRng(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   ROI CALCULATOR
+══════════════════════════════════════════════════════ */
+function updateROI() {
+  const b = parseFloat(document.getElementById('roi-slider').value);
+  savedBudget = b;
+  const bK = Math.round(b/1000);
+  const a40K = Math.round(b*0.4/1000);
+  const a8K  = Math.round(b*0.08/1000);
+  const lostK = bK - a8K;
+  document.getElementById('sv').textContent     = bK;
+  document.getElementById('r-in').textContent   = bK+'k Kč';
+  document.getElementById('r-40').textContent   = a40K+'k Kč';
+  document.getElementById('r-8').textContent    = a8K+'k Kč';
+  document.getElementById('r-lost').textContent = lostK+'k Kč';
+  drawFunnel(b);
+  syncDelta();
+}
+
+function drawFunnel(budget) {
+  const svg = document.getElementById('svg-funnel');
+  if (!svg) return;
+  const W=600, H=280;
+  const bK = Math.round(budget/1000);
+  const a40K = Math.round(budget*0.4/1000);
+  const a8K  = Math.round(budget*0.08/1000);
+
+  const bars = [
+    {pct:1,   label:'100% — '+bK+'k Kč', sub:'Vstup kampaně', col:'rgba(255,255,255,0.5)'},
+    {pct:0.4, label:'40% — '+a40K+'k Kč', sub:'Po latenci 12,8s', col:'rgba(255,200,60,0.7)'},
+    {pct:0.08,label:'8% — '+a8K+'k Kč',  sub:'Po 436 bariérách', col:'rgba(255,80,80,0.8)'},
+  ];
+
+  const maxW = W - 80;
+  let h = '';
+  bars.forEach((b,i) => {
+    const bw = Math.max(b.pct * maxW, 50);
+    const y = 20 + i*85;
+    const x = 40;
+    h += `<rect x="${x}" y="${y}" width="${bw.toFixed(0)}" height="32" fill="${b.col}" rx="0"/>`;
+    h += `<text x="${x+8}" y="${y+21}" font-family="IBM Plex Mono" font-size="11" fill="#080808" font-weight="600">${b.label}</text>`;
+    h += `<text x="${x+bw+10}" y="${y+21}" font-family="IBM Plex Mono" font-size="9" fill="rgba(255,255,255,0.35)" letter-spacing="1">${b.sub}</text>`;
+    if (i<bars.length-1) {
+      h += `<text x="${W/2}" y="${y+50}" font-family="IBM Plex Mono" font-size="9" fill="rgba(255,80,80,0.4)" text-anchor="middle" letter-spacing="2">↓ ↓ ↓</text>`;
+    }
+  });
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML = h;
+}
+
+function syncDelta() {
+  const b = savedBudget;
+  const bK = Math.round(b/1000);
+  const beforeK = Math.round(b*0.08/1000);
+  const afterK  = Math.round(b*0.95/1000);
+  const diffK   = afterK - beforeK;
+  const budEl = document.getElementById('delta-bud');
+  const beEl  = document.getElementById('delta-before');
+  const afEl  = document.getElementById('delta-after');
+  const diEl  = document.getElementById('delta-diff');
+  if (budEl) budEl.textContent = bK+'k';
+  if (beEl)  beEl.textContent  = beforeK+'k Kč';
+  if (afEl)  afEl.textContent  = afterK+'k Kč';
+  if (diEl)  diEl.textContent  = '+'+diffK+'k Kč';
+}
+
+/* ══════════════════════════════════════════════════════
+   BOOT SEQUENCE
+══════════════════════════════════════════════════════ */
+const BOOT_MSGS = [
+  {txt:'Connecting to qm-diagnostics.sys...', cls:''},
+  {txt:'[ AUTH ] SSH handshake — complete', cls:'ok'},
+  {txt:'[ SYS ] QM_BLACKBOX_v11 — inicializace modulu', cls:''},
+  {txt:'[ NET ] Skenování topologie domén...', cls:''},
+  {txt:'[ MAP ] Detekováno 171 uzlů v síti', cls:'ok'},
+  {txt:'[ CHK ] Analýza hlavních vstupních bran...', cls:''},
+  {txt:'[ WRN ] 7 kritických uzlů — přetížený stav', cls:'warn'},
+  {txt:'[ LCP ] Měření latence primárního kontejneru...', cls:''},
+  {txt:'[ WRN ] Naměřeno: 12,8s — limit: 2,5s — KRITICKÉ', cls:'warn'},
+  {txt:'[ SCN ] Audit strukturálních anomálií...', cls:''},
+  {txt:'[ WRN ] Identifikováno 436 bariér', cls:'warn'},
+  {txt:'[ ROI ] Výpočet efektivity mediální investice...', cls:''},
+  {txt:'[ WRN ] Efektivita: 8% — kriticky nízká', cls:'warn'},
+  {txt:'[ OK  ] Telemetrie aktivní. Systém připraven.', cls:'ok'},
+];
+
+function runBoot() {
+  const body = document.getElementById('boot-body');
+  body.innerHTML = '';
+  let prog = 0;
+
+  const fillEl = document.getElementById('boot-fill');
+  const pctEl  = document.getElementById('boot-pct');
+
+  const progIv = setInterval(() => {
+    prog += 5 + Math.random()*9;
+    prog = Math.min(prog, 100);
+    fillEl.style.width = prog+'%';
+    pctEl.textContent  = Math.floor(prog)+'%';
+    if (prog >= 100) {
+      clearInterval(progIv);
+      setTimeout(bootDone, 400);
+    }
+  }, 160);
+
+  BOOT_MSGS.forEach(({txt,cls},i) => {
+    setTimeout(() => {
+      const div = document.createElement('div');
+      div.className = 't-line'+(cls?' '+cls:'');
+      div.textContent = txt;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }, 300 + i*380);
+  });
+}
+
+function bootDone() {
+  const boot = document.getElementById('phase-boot');
+  boot.style.transition = 'opacity 0.6s ease';
+  boot.style.opacity = '0';
+  setTimeout(() => {
+    boot.style.display = 'none';
+    const wrap = document.getElementById('main-wrap');
+    wrap.style.display = 'flex';
+    // Build topo immediately
+    buildChaosTopology('svg-chaos',700,460,false);
+    topoBuilt = true;
+    setTimeout(scrambleAll, 100);
+    updateROI();
+    drawFunnel(150000);
+  }, 600);
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', runBoot);
+</script>
+</body>
+</html>
