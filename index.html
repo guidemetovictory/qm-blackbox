@@ -31,8 +31,8 @@ html,body { height:100%; background:var(--bg-dark); color:var(--text-main); font
   #qm-cursor { display: none !important; }
 }
 @media (pointer: fine) {
-  * { cursor: none !important; }
-  #qm-cursor { display: block; }
+  * { cursor: auto !important; }
+  #qm-cursor { display: none !important; }
 }
 
 #qm-cursor {
@@ -42,14 +42,14 @@ html,body { height:100%; background:var(--bg-dark); color:var(--text-main); font
   transform:translate(-50%,-50%);
   transition:transform 0.08s ease-out;
   will-change:transform;
-  display:none;
+  display:none !important;
 }
 
 /* ═══ GRAIN + SCANLINES (from style.css) ═══ */
 body::before {
   content:""; position:fixed; top:0; left:0; width:100%; height:100%;
   background:url('https://grainy-gradients.vercel.app/noise.svg');
-  opacity:0.045; pointer-events:none; z-index:9000;
+  opacity:0; pointer-events:none; z-index:9000;
 }
 body::after {
   content:""; position:fixed; top:0; left:0; width:100%; height:100%;
@@ -57,11 +57,11 @@ body::after {
     linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.13) 50%),
     linear-gradient(90deg,rgba(255,0,0,0.025),rgba(0,255,0,0.008),rgba(0,0,255,0.025));
   background-size:100% 3px, 2px 100%;
-  pointer-events:none; z-index:9001;
+  pointer-events:none; z-index:9001; opacity:0;
 }
 
 /* ═══ VHS GLITCH (from style.css) ═══ */
-.glitch-active { animation:vhs-flash 0.15s steps(2) forwards; }
+.glitch-active { animation:none; }
 @keyframes vhs-flash {
   0%   { filter:hue-rotate(90deg) brightness(1.2); opacity:0.8; }
   50%  { filter:contrast(1.5) saturate(1.5); opacity:1; }
@@ -357,9 +357,9 @@ input[type=range]::-webkit-slider-thumb {
     <div class="phase-header">
       <span class="phase-id" id="phase-id-label">[ FÁZE_01 ]</span>
       <div class="phase-tabs">
-        <div class="p-tab active" id="tab-0"><div class="p-tab-dot"></div><span>Topologie</span></div>
-        <div class="p-tab" id="tab-1"><div class="p-tab-dot"></div><span>ROI</span></div>
-        <div class="p-tab" id="tab-2"><div class="p-tab-dot"></div><span>Restrukturalizace</span></div>
+        <div class="p-tab active" id="tab-0"><div class="p-tab-dot"></div><span>Únik</span></div>
+        <div class="p-tab" id="tab-1"><div class="p-tab-dot"></div><span>Ztráta</span></div>
+        <div class="p-tab" id="tab-2"><div class="p-tab-dot"></div><span>Obnova toku</span></div>
         <div class="p-tab" id="tab-3"><div class="p-tab-dot"></div><span>Quiet Module</span></div>
       </div>
     </div>
@@ -368,16 +368,16 @@ input[type=range]::-webkit-slider-thumb {
       <strong>PRŮBĚŽNÁ ZTRÁTA:</strong> <span id="ongoing-loss-value">0.00 Kč</span>
     </div>
 
-    <!-- ═══ PHASE 0: TOPOLOGIE ═══ -->
+    <!-- ═══ PHASE 0: FLOW / LEAKAGE ═══ -->
     <div class="phase active" id="phase-0">
       <div class="content">
-        <span class="meta-label">[ FÁZE_01 — DYNAMICKÁ_TOPOLOGIE ]</span>
-        <h2 class="sec-title" id="h-topo">Síťová Mapa Ekosystému</h2>
+        <span class="meta-label">[ FÁZE_01 — AKTIVNÍ ÚNIK HODNOTY ]</span>
+        <h2 class="sec-title" id="h-topo">Tady Vám Teď Unikají Peníze</h2>
 
-        <p>171 uzlů. Bez architektury. Data unikají na okrajích dřív, než dorazí k uživateli.</p>
+        <p>Hodnota vstupuje do systému, ale část se ztrácí dřív, než dorazí k zákazníkovi. Každé zdržení a každý únik snižuje výkon, který už dnes platíte.</p>
 
         <div class="note">
-          <strong>TOPOLOGIE</strong> — Každý uzel je stránka, doména nebo služba. Spojnice jsou datové cesty. Červené uzly jsou kritické vstupní brány s latencí přes 10 sekund — na jejich okrajích fotony (data) unikají do prázdna místo k uživateli.
+          <strong>LEAKAGE</strong> — Bílé částice jsou hodnota Vaší poptávky. Pokud zeslábnou, rozptýlí se nebo zmizí v červených zónách, znamená to ztracený dosah, ztracenou důvěru a ztracené peníze.
         </div>
 
         <div class="svg-wrap">
@@ -387,19 +387,19 @@ input[type=range]::-webkit-slider-thumb {
         </div>
 
         <div style="margin:24px 0;">
-          <div class="data-row"><span class="data-key">UZLŮ V SÍTI</span><span class="data-val accent">171</span></div>
-          <div class="data-row"><span class="data-key">KRITICKÉ VSTUPNÍ BRÁNY</span><span class="data-val fail">5–8</span></div>
-          <div class="data-row"><span class="data-key">LATENCE HLAVNÍHO KONTEJNERU</span><span class="data-val fail">12,8s</span></div>
-          <div class="data-row"><span class="data-key">STRUKTURÁLNÍ ANOMÁLIE</span><span class="data-val fail">436</span></div>
-          <div class="data-row"><span class="data-key">PRŮMYSLOVÝ STANDARD LCP</span><span class="data-val">&lt;2,5s</span></div>
+          <div class="data-row"><span class="data-key">AKTIVNÍ MÍSTA ÚNIKU</span><span class="data-val fail">5–8</span></div>
+          <div class="data-row"><span class="data-key">ZTRÁTA NA ZPOŽDĚNÍ</span><span class="data-val fail">12,8s</span></div>
+          <div class="data-row"><span class="data-key">BARIÉRY POŽÍRAJÍCÍ TOK</span><span class="data-val fail">436</span></div>
+          <div class="data-row"><span class="data-key">RETENCE HODNOTY</span><span class="data-val fail">8%</span></div>
+          <div class="data-row"><span class="data-key">CÍL STABILNÍHO TOKU</span><span class="data-val ok">&gt;95%</span></div>
         </div>
 
         <div class="note">
-          <strong>Akamai, 2024:</strong> 100ms zpoždění = −7% konverze &nbsp;|&nbsp; <strong>Google CWV:</strong> LCP &gt;4s = penalizace rankingu
+          <strong>EKONOMICKÝ DOPAD</strong> — Co se v červené zóně ztratí, už se nepromění v poptávku. Tady se z marketingového rozpočtu stává ztráta.
         </div>
 
         <div class="btn-row">
-          <button class="opt-btn" onclick="nextPhase()">[ SIMULÁTOR_ROI → ]</button>
+          <button class="opt-btn" onclick="nextPhase()">[ UKÁZAT FINANČNÍ ZTRÁTU → ]</button>
         </div>
       </div>
     </div>
@@ -407,14 +407,14 @@ input[type=range]::-webkit-slider-thumb {
     <!-- ═══ PHASE 1: ROI SIMULATOR ═══ -->
     <div class="phase" id="phase-1">
       <div class="content">
-        <span class="meta-label">[ FÁZE_02 — DESTRUKCE_MEDIÁLNÍ_INVESTICE ]</span>
-        <h2 class="sec-title" id="h-roi">Simulátor ROI</h2>
+        <span class="meta-label">[ FÁZE_02 — KVANTIFIKACE ZTRÁTY ]</span>
+        <h2 class="sec-title" id="h-roi">Kolik Vám Ten Únik Bere</h2>
 
-        <p>Vizualizace efektivity marketingového rozpočtu při stávajícím technickém stavu. Nejde o cenu vývoje — jde o to, kolik z vaší kampaně skutečně dorazí k lidem.</p>
+        <p>Tohle není rozpočet na vývoj. Tohle je rozpočet, který už dnes platíte, ale který se kvůli úniku nedostane k lidem.</p>
 
         <div class="slider-wrap">
           <div class="slider-head">
-            <span class="slider-label">Rozpočet kampaně</span>
+            <span class="slider-label">Placená hodnota vstupu</span>
             <span class="slider-val"><span id="sv">150</span>k Kč</span>
           </div>
           <input type="range" min="50000" max="1000000" step="10000" value="150000" id="roi-slider" oninput="updateROI()">
@@ -428,61 +428,60 @@ input[type=range]::-webkit-slider-thumb {
         </div>
 
         <div style="margin:24px 0;">
-          <div class="data-row"><span class="data-key">INVESTICE DO KAMPANĚ</span><span class="data-val" id="r-in">150k Kč</span></div>
-          <div class="data-row"><span class="data-key">PO LATENCI 12,8s (−60%)</span><span class="data-val fail" id="r-40">60k Kč</span></div>
-          <div class="data-row"><span class="data-key">PO 436 BARIÉRÁCH (−80%)</span><span class="data-val fail" id="r-8">12k Kč</span></div>
-          <div class="data-row"><span class="data-key">REÁLNÁ EFEKTIVITA</span><span class="data-val fail">8%</span></div>
-          <div class="data-row"><span class="data-key">INVESTICE DO VAKUA</span><span class="data-val fail" id="r-lost">138k Kč</span></div>
+          <div class="data-row"><span class="data-key">VSTUPUJÍCÍ HODNOTA</span><span class="data-val" id="r-in">150k Kč</span></div>
+          <div class="data-row"><span class="data-key">UDRŽENÁ HODNOTA PO ÚNIKU</span><span class="data-val ok" id="r-8">12k Kč</span></div>
+          <div class="data-row"><span class="data-key">RETENCE HODNOTY</span><span class="data-val fail">8%</span></div>
+          <div class="data-row"><span class="data-key">CELKOVÁ PRŮBĚŽNÁ ZTRÁTA</span><span class="data-val fail" id="r-lost">138k Kč</span></div>
         </div>
 
 
         <div class="btn-row">
           <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
-          <button class="opt-btn" onclick="nextPhase()">[ RESTRUKTURALIZACE → ]</button>
+          <button class="opt-btn" onclick="nextPhase()">[ UKÁZAT ZACHRÁNĚNOU HODNOTU → ]</button>
         </div>
       </div>
     </div>
 
-    <!-- ═══ PHASE 2: SPLIT-SCREEN HEALING ═══ -->
+    <!-- ═══ PHASE 2: FLOW RECOVERY ═══ -->
     <div class="phase" id="phase-2">
       <div class="content">
-        <span class="meta-label">[ FÁZE_03 — DELTA_ANALÝZA ]</span>
-        <h2 class="sec-title" id="h-delta">Stávající Stav vs. Po Inicializaci</h2>
+        <span class="meta-label">[ FÁZE_03 — POTLAČENÍ ÚNIKU ]</span>
+        <h2 class="sec-title" id="h-delta">Co Dnes Uniká vs. Co Lze Udržet</h2>
 
-        <p>Stejný rozpočet. Radikálně odlišný výsledek. Vlevo: systém bez zásahu. Vpravo: po Technické Inicializaci Průchodnosti (14 dní).</p>
+        <p>Stejná hodnota vstupuje do systému. Vlevo odtéká pryč. Vpravo zůstává uvnitř toku a proměňuje se v reálný obchodní výsledek.</p>
 
         <div class="split" style="margin-top:32px;">
           <div class="split-panel">
-            <span class="split-label fail">[ AKTUÁLNÍ_STAV ]</span>
+            <span class="split-label fail">[ AKTIVNÍ LEAKAGE ]</span>
             <svg id="svg-broken" class="split-svg" viewBox="0 0 320 260"></svg>
           </div>
           <div class="split-panel">
-            <span class="split-label ok">[ PO_INICIALIZACI ]</span>
+            <span class="split-label ok">[ STABILNÍ FLOW ]</span>
             <svg id="svg-healed" class="split-svg" viewBox="0 0 320 260"></svg>
           </div>
         </div>
 
         <div style="margin:24px 0;">
-          <div class="data-row"><span class="data-key">LATENCE — PŘED</span><span class="data-val fail">12,8s</span></div>
-          <div class="data-row"><span class="data-key">LATENCE — PO</span><span class="data-val ok">&lt;2,5s</span></div>
-          <div class="data-row"><span class="data-key">EFEKTIVITA KAMPANĚ — PŘED</span><span class="data-val fail">8%</span></div>
-          <div class="data-row"><span class="data-key">EFEKTIVITA KAMPANĚ — PO</span><span class="data-val ok">~95%</span></div>
-          <div class="data-row"><span class="data-key">REÁLNÝ DOSAH (z <span id="delta-bud">150k</span>) — PŘED</span><span class="data-val fail" id="delta-before">12k Kč</span></div>
-          <div class="data-row"><span class="data-key">REÁLNÝ DOSAH — PO</span><span class="data-val ok" id="delta-after">143k Kč</span></div>
-          <div class="data-row"><span class="data-key">DELTA</span><span class="data-val accent" id="delta-diff">+131k Kč</span></div>
+          <div class="data-row"><span class="data-key">ÚNIK PŘED ZÁSAHEM</span><span class="data-val fail">12,8s</span></div>
+          <div class="data-row"><span class="data-key">TOK PO STABILIZACI</span><span class="data-val ok">&lt;2,5s</span></div>
+          <div class="data-row"><span class="data-key">RETENCE PŘED ZÁSAHEM</span><span class="data-val fail">8%</span></div>
+          <div class="data-row"><span class="data-key">RETENCE PO STABILIZACI</span><span class="data-val ok">~95%</span></div>
+          <div class="data-row"><span class="data-key">ZTRACENÁ HODNOTA (z <span id="delta-bud">150k</span>) — PŘED</span><span class="data-val fail" id="delta-before">12k Kč</span></div>
+          <div class="data-row"><span class="data-key">UDRŽENÁ HODNOTA — PO</span><span class="data-val ok" id="delta-after">143k Kč</span></div>
+          <div class="data-row"><span class="data-key">ZACHRÁNĚNÁ HODNOTA</span><span class="data-val accent" id="delta-diff">+131k Kč</span></div>
         </div>
 
         <div class="status-term">
-          <div class="s-fail">[ SYSTÉM ]&nbsp;&nbsp;&nbsp;&nbsp;STAV: NON-OPERATIONAL</div>
-          <div class="s-ok"  >&nbsp;[ FÁZE_01 ]&nbsp;&nbsp;KOMPLETNÍ — diagnostika aktivní</div>
-          <div class="s-wait">[ FÁZE_02 ]&nbsp;&nbsp;ČEKAJÍCÍ — inicializace průchodnosti</div>
-          <div class="s-wait">[ FÁZE_03 ]&nbsp;&nbsp;BLOKOVANÁ — prerekvizita: Fáze 02</div>
-          <div class="s-wait">[ FÁZE_04 ]&nbsp;&nbsp;BLOKOVANÁ — prerekvizita: Fáze 02</div>
+          <div class="s-fail">[ LEAKAGE ]&nbsp;&nbsp;AKTUÁLNĚ POŽÍRÁ PLACENOU HODNOTU</div>
+          <div class="s-ok"  >&nbsp;[ FLOW ]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LZE OBNOVIT A UDRŽET UVNITŘ SYSTÉMU</div>
+          <div class="s-wait">[ ZÁSAH ]&nbsp;&nbsp;&nbsp;&nbsp;STABILIZACE ZASTAVÍ DALŠÍ ÚNIK</div>
+          <div class="s-wait">[ DOPAD ]&nbsp;&nbsp;&nbsp;&nbsp;STEJNÝ ROZPOČET, VYŠŠÍ RETENCE</div>
+          <div class="s-wait">[ CTA ]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PŘECHOD K ŘEŠENÍ</div>
         </div>
 
         <div class="btn-row">
           <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
-          <button class="opt-btn" onclick="nextPhase()">[ QUIET_MODULE → ]</button>
+          <button class="opt-btn" onclick="nextPhase()">[ PŘEJÍT K ŘEŠENÍ → ]</button>
         </div>
       </div>
     </div>
@@ -490,11 +489,11 @@ input[type=range]::-webkit-slider-thumb {
     <!-- ═══ PHASE 3: QM FINALE ═══ -->
     <div class="phase" id="phase-3">
       <div class="content">
-        <span class="meta-label">[ FÁZE_04 — QUIET_MODULE — STABILIZACE ]</span>
-        <h2 class="sec-title" id="h-qm">Zde Začíná Stabilita</h2>
+        <span class="meta-label">[ FÁZE_04 — QUIET MODULE — POTLAČENÍ LEAKAGE ]</span>
+        <h2 class="sec-title" id="h-qm">Tady Se Ztráta Zastaví</h2>
 
         <div class="statement">
-          <p>Diagnostika identifikovala příčinu. Systém je hermeticky uzavřen vůči marketingovému úsilí. Quiet Module přebírá kontrolu nad infrastrukturou, aby měla pevný základ — a aby každá investovaná koruna skutečně dorazila k lidem.</p>
+          <p>Příčina úniku je identifikovaná. Quiet Module stabilizuje průchodnost tak, aby placená hodnota přestala odtékat a začala se proměňovat v reálný obchodní výsledek.</p>
         </div>
 
         <div class="contact-grid">
@@ -504,7 +503,7 @@ input[type=range]::-webkit-slider-thumb {
           </div>
           <div class="contact-cell">
             <span class="contact-cell-label">Co se provede</span>
-            <div class="contact-cell-val">Technická Inicializace Průchodnosti (14 dní). Vyčištění 436 anomálií, latence pod 2,5s, logika transferu domén.</div>
+            <div class="contact-cell-val">Potlačení míst úniku, obnova stabilního toku hodnoty a retence výkonu pod 2,5 s.</div>
           </div>
           <div class="contact-cell">
             <span class="contact-cell-label">Kontakt</span>
@@ -515,13 +514,13 @@ input[type=range]::-webkit-slider-thumb {
           </div>
           <div class="contact-cell">
             <span class="contact-cell-label">Výsledek</span>
-            <div class="contact-cell-val">Systém schopný nést mediální kampaně s ~95% účinností. Základ pro aktivaci všech směrů.</div>
+            <div class="contact-cell-val">Systém, který udrží přibližně 95 % hodnoty uvnitř toku a přestane proměňovat rozpočet ve ztrátu.</div>
           </div>
         </div>
 
         <div class="btn-row">
           <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
-          <a href="mailto:hello@quietmodule.cz?subject=QM%20Inicializace&body=Dobrý%20den%2C%0Azahajuji%20poptávku%20na%20Technickou%20Inicializaci%20Průchodnosti." class="opt-btn" style="text-align:center;text-decoration:none;">[ AUTORIZOVAT_INICIALIZACI → ]</a>
+          <a href="mailto:hello@quietmodule.cz?subject=QM%20Inicializace&body=Dobr%C3%BD%20den%2C%0Azahajuji%20popt%C3%A1vku%20na%20stabilizaci%20toku%20a%20potla%C4%8Den%C3%AD%20leakage." class="opt-btn" style="text-align:center;text-decoration:none;">[ ZASTAVIT ZTRÁTU → ]</a>
         </div>
       </div>
     </div>
@@ -548,18 +547,9 @@ input[type=range]::-webkit-slider-thumb {
    SCRAMBLE (from main.js)
 ══════════════════════════════════════════════════════ */
 function scrambleText(el, text) {
-  const chars = "!<>-_\\/[]{}—=+*^?#________";
   const original = text || el.innerText;
-  let iteration = 0;
   clearInterval(el._scramble);
-  el._scramble = setInterval(() => {
-    el.innerText = original.split("").map((char, index) => {
-      if (index < iteration) return original[index];
-      return chars[Math.floor(Math.random() * chars.length)];
-    }).join("");
-    if (iteration >= original.length) clearInterval(el._scramble);
-    iteration += 1 / 1.5;
-  }, 22);
+  el.innerText = original;
 }
 
 function scrambleAll() {
@@ -572,11 +562,7 @@ function scrambleAll() {
    GLITCH TRANSITION (from style.css)
 ══════════════════════════════════════════════════════ */
 function glitchTransition(cb) {
-  document.body.classList.add('glitch-active');
-  setTimeout(() => {
-    cb();
-    setTimeout(() => document.body.classList.remove('glitch-active'), 80);
-  }, 50);
+  cb();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -594,7 +580,7 @@ const phaseLabels = ['FÁZE_01','FÁZE_02','FÁZE_03','FÁZE_04'];
 function showPhase(n) {
   const phase2El = document.getElementById('phase-2');
 
-  document.querySelectorAll('.phase').forEach((el,i) => {
+  document.querySelectorAll('#main-wrap > .phase').forEach((el,i) => {
     el.classList.toggle('active', i === n);
   });
   document.querySelectorAll('.p-tab').forEach((el,i) => {
@@ -651,120 +637,32 @@ function buildChaosTopology(svgId, W, H, healed, mini) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
-  const N = mini ? 60 : 171;
-  const critCount = mini ? 4 : 7;
-  const nodes = [];
-  const rng = seededRng(42);
-
-  // Generate organically scattered nodes — polar with random jitter
-  // NO central hub — just distributed clusters
-  const clusters = [
-    {cx: W*0.25, cy: H*0.3, r: W*0.18},
-    {cx: W*0.7,  cy: H*0.25, r: W*0.14},
-    {cx: W*0.55, cy: H*0.65, r: W*0.16},
-    {cx: W*0.2,  cy: H*0.7,  r: W*0.13},
-    {cx: W*0.85, cy: H*0.6,  r: W*0.12},
+  let html = '';
+  const lanes = mini ? 5 : 8;
+  const leakZones = [
+    { x: W * 0.36, y: H * 0.12, w: W * 0.12, h: H * 0.76 },
+    { x: W * 0.7,  y: H * 0.22, w: W * 0.12, h: H * 0.56 }
   ];
 
-  for (let i = 0; i < N; i++) {
-    const cluster = clusters[Math.floor(rng() * clusters.length)];
-    const angle = rng() * Math.PI * 2;
-    // Non-uniform radial distribution — more nodes near edges of cluster
-    const radius = cluster.r * (0.2 + rng() * 0.85);
-    const x = cluster.cx + radius * Math.cos(angle) + (rng()-0.5)*20;
-    const y = cluster.cy + radius * Math.sin(angle) + (rng()-0.5)*20;
-    // Critical nodes: near the outer boundary of the canvas
-    const distFromEdge = Math.min(x, y, W-x, H-y);
-    const isCritical = i < critCount && distFromEdge < W * 0.25;
-    nodes.push({
-      x: Math.max(10, Math.min(W-10, x)),
-      y: Math.max(10, Math.min(H-10, y)),
-      critical: isCritical || (i < critCount && distFromEdge < W*0.3)
-    });
-  }
+  html += `<rect x="0" y="${H*0.14}" width="${W*0.09}" height="${H*0.72}" fill="rgba(255,255,255,0.06)"/>`;
+  html += `<rect x="${W*0.91}" y="${H*0.14}" width="${W*0.09}" height="${H*0.72}" fill="rgba(255,80,80,0.08)"/>`;
 
-  // Force critical nodes toward edges
-  for (let i = 0; i < critCount; i++) {
-    const angle = (i / critCount) * Math.PI * 2 + rng() * 0.8;
-    const r = Math.min(W,H) * (0.38 + rng()*0.08);
-    nodes[i].x = Math.max(15, Math.min(W-15, W/2 + r * Math.cos(angle)));
-    nodes[i].y = Math.max(15, Math.min(H-15, H/2 + r * Math.sin(angle)));
-    nodes[i].critical = true;
-  }
-
-  // Build edges: each node connects to 2–4 nearest neighbors (NOT all to center)
-  const edges = [];
-  for (let i = 0; i < N; i++) {
-    const dists = [];
-    for (let j = 0; j < N; j++) {
-      if (i===j) continue;
-      const dx = nodes[i].x - nodes[j].x;
-      const dy = nodes[i].y - nodes[j].y;
-      dists.push({j, d: Math.sqrt(dx*dx+dy*dy)});
-    }
-    dists.sort((a,b)=>a.d-b.d);
-    const connectCount = 2 + Math.floor(rng()*2); // 2–3 neighbors
-    for (let k = 0; k < connectCount && k < dists.length; k++) {
-      const key = [Math.min(i,dists[k].j), Math.max(i,dists[k].j)].join('-');
-      if (!edges.find(e=>e.key===key)) {
-        edges.push({key, a:i, b:dists[k].j});
-      }
-    }
-  }
-
-  let html = '';
-
-  // Scatter lines from critical nodes (data leaking into void)
-  nodes.forEach((n, i) => {
-    if (!n.critical) return;
-    // 3 escape rays going outward from the node
-    const outAngle = Math.atan2(n.y - H/2, n.x - W/2);
-    for (let s = -1; s <= 1; s++) {
-      const a = outAngle + s * 0.5;
-      const len = 30 + s*10 + rng()*20;
-      const ex = n.x + len * Math.cos(a);
-      const ey = n.y + len * Math.sin(a);
-      html += `<line x1="${n.x}" y1="${n.y}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"
-        stroke="rgba(255,80,80,0.25)" stroke-width="0.8"
-        stroke-dasharray="2 8"
-        style="animation:scatter ${1.8+s*0.3}s ease-in-out ${Math.abs(s)*0.2}s infinite"/>`;
-    }
+  leakZones.forEach(zone => {
+    html += `<rect x="${zone.x}" y="${zone.y}" width="${zone.w}" height="${zone.h}" fill="rgba(255,80,80,0.12)" stroke="rgba(255,80,80,0.28)" stroke-width="1"/>`;
   });
 
-  // Edges
-  edges.forEach(({a,b}) => {
-    const na = nodes[a], nb = nodes[b];
-    const isCrit = na.critical || nb.critical;
-    const delay = (rng()*3).toFixed(2);
-    const dur = (1.5 + rng()*1.5).toFixed(2);
-    html += `<line x1="${na.x.toFixed(1)}" y1="${na.y.toFixed(1)}" x2="${nb.x.toFixed(1)}" y2="${nb.y.toFixed(1)}"
-      stroke="${isCrit?'rgba(255,80,80,0.2)':'rgba(255,255,255,0.06)'}" stroke-width="${isCrit?'0.8':'0.5'}"/>`;
-    // Photon on edge
-    const edgeLen = Math.hypot(nb.x-na.x, nb.y-na.y);
-    html += `<line x1="${na.x.toFixed(1)}" y1="${na.y.toFixed(1)}" x2="${nb.x.toFixed(1)}" y2="${nb.y.toFixed(1)}"
-      stroke="${isCrit?'rgba(255,80,80,0.7)':'rgba(255,255,255,0.35)'}"
-      stroke-width="${isCrit?1.5:1}"
-      stroke-dasharray="${isCrit?'5 '+edgeLen:'3 '+edgeLen}"
-      stroke-dashoffset="${edgeLen}"
-      style="animation:${isCrit?'photon-fast':'photon'} ${dur}s linear ${delay}s infinite"/>`;
-  });
+  for (let i = 0; i < lanes; i++) {
+    const y = H * 0.18 + ((H * 0.64) / (lanes - 1)) * i;
+    html += `<line x1="${W*0.06}" y1="${y}" x2="${W*0.94}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
 
-  // Nodes
-  nodes.forEach((n, i) => {
-    if (n.critical) {
-      html += `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="12" fill="none"
-        stroke="rgba(255,80,80,0.3)" stroke-width="0.8"
-        style="animation:pulse-ring 2.5s ease-out ${(i*0.35%2).toFixed(2)}s infinite"/>`;
-      html += `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="5"
-        fill="rgba(255,80,80,0.75)" stroke="rgba(255,80,80,0.9)" stroke-width="0.5"
-        style="filter:drop-shadow(0 0 4px rgba(255,80,80,0.5))"/>`;
-    } else {
-      const sz = mini ? 2.5 : (i < 30 ? 3.5 : 2);
-      html += `<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${sz}"
-        fill="rgba(255,255,255,${0.08 + rng()*0.12})" stroke="rgba(255,255,255,0.15)" stroke-width="0.3"/>`;
-    }
-  });
+    const leakA = leakZones[0];
+    const leakB = leakZones[1];
+    html += `<line x1="${W*0.08}" y1="${y}" x2="${W*0.95}" y2="${y}" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" stroke-dasharray="5 180" stroke-dashoffset="180" style="animation:photon ${1.8 + i * 0.15}s linear ${i * 0.12}s infinite"/>`;
+    html += `<line x1="${leakA.x + leakA.w/2}" y1="${y}" x2="${leakA.x + leakA.w + 24}" y2="${Math.max(10, y - 18 - (i%2)*10)}" stroke="rgba(255,80,80,0.45)" stroke-width="1" stroke-dasharray="3 10"/>`;
+    html += `<line x1="${leakB.x + leakB.w/2}" y1="${y}" x2="${leakB.x + leakB.w + 26}" y2="${Math.min(H-10, y + 16 + (i%2)*12)}" stroke="rgba(255,80,80,0.45)" stroke-width="1" stroke-dasharray="3 10"/>`;
+    html += `<circle cx="${leakA.x + leakA.w + 24}" cy="${Math.max(10, y - 18 - (i%2)*10)}" r="${mini ? 1.8 : 2.4}" fill="rgba(255,80,80,0.85)"/>`;
+    html += `<circle cx="${leakB.x + leakB.w + 26}" cy="${Math.min(H-10, y + 16 + (i%2)*12)}" r="${mini ? 1.8 : 2.4}" fill="rgba(255,80,80,0.85)"/>`;
+  }
 
   svg.innerHTML = html;
 }
@@ -776,73 +674,17 @@ function buildHealedTopology(svgId, W, H) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
-  const N = 60;
-  const cx = W/2, cy = H/2;
-  const nodes = [];
-  const rng = seededRng(42);
-
-  // Healed = geometric rings with slight jitter (ordered but organic)
-  // Central golden hub
-  nodes.push({x:cx, y:cy, core:true});
-
-  // Ring 1: 8 nodes tight
-  for (let i=0;i<8;i++) {
-    const a = (i/8)*Math.PI*2;
-    nodes.push({x:cx+55*Math.cos(a)+(rng()-0.5)*6, y:cy+50*Math.sin(a)+(rng()-0.5)*6});
-  }
-  // Ring 2: 16 nodes
-  for (let i=0;i<16;i++) {
-    const a = (i/16)*Math.PI*2 + 0.2;
-    nodes.push({x:cx+105*Math.cos(a)+(rng()-0.5)*8, y:cy+95*Math.sin(a)+(rng()-0.5)*8});
-  }
-  // Ring 3: 35 nodes outer
-  for (let i=0;i<35;i++) {
-    const a = (i/35)*Math.PI*2 + 0.1;
-    nodes.push({x:cx+148*Math.cos(a)+(rng()-0.5)*7, y:cy+130*Math.sin(a)+(rng()-0.5)*7});
-  }
-
   let html = '';
+  const lanes = 6;
+  html += `<rect x="0" y="${H*0.14}" width="${W*0.09}" height="${H*0.72}" fill="rgba(80,220,140,0.08)"/>`;
+  html += `<rect x="${W*0.91}" y="${H*0.14}" width="${W*0.09}" height="${H*0.72}" fill="rgba(80,220,140,0.1)"/>`;
 
-  // Edges: hub to ring1, ring1 to ring2 etc. — clean connections
-  for (let i=1;i<=8;i++) {
-    const n=nodes[i];
-    const delay=(i*0.25).toFixed(2);
-    html+=`<line x1="${cx}" y1="${cy}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
-      stroke="rgba(80,220,140,0.3)" stroke-width="0.8"/>`;
-    html+=`<line x1="${cx}" y1="${cy}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
-      stroke="rgba(80,220,140,0.8)" stroke-width="1.2"
-      stroke-dasharray="4 120" stroke-dashoffset="120"
-      style="animation:photon-fast 1.2s linear ${delay}s infinite"/>`;
+  for (let i = 0; i < lanes; i++) {
+    const y = H * 0.18 + ((H * 0.64) / (lanes - 1)) * i;
+    html += `<line x1="${W*0.07}" y1="${y}" x2="${W*0.93}" y2="${y}" stroke="rgba(80,220,140,0.22)" stroke-width="1"/>`;
+    html += `<line x1="${W*0.08}" y1="${y}" x2="${W*0.92}" y2="${y}" stroke="rgba(80,220,140,0.85)" stroke-width="1.6" stroke-dasharray="5 150" stroke-dashoffset="150" style="animation:photon-fast ${1.4 + i*0.16}s linear ${i*0.14}s infinite"/>`;
+    html += `<circle cx="${W*0.92}" cy="${y}" r="3.2" fill="rgba(80,220,140,0.9)"/>`;
   }
-  for (let i=9;i<=24;i++) {
-    const n=nodes[i];
-    const parent=nodes[1+(i-9)%8];
-    const delay=((i-9)*0.12).toFixed(2);
-    html+=`<line x1="${parent.x.toFixed(1)}" y1="${parent.y.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
-      stroke="rgba(80,220,140,0.2)" stroke-width="0.5"/>`;
-    html+=`<line x1="${parent.x.toFixed(1)}" y1="${parent.y.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
-      stroke="rgba(80,220,140,0.6)" stroke-width="0.8"
-      stroke-dasharray="3 100" stroke-dashoffset="100"
-      style="animation:photon 1.8s linear ${delay}s infinite"/>`;
-  }
-  for (let i=25;i<N && i<nodes.length;i++) {
-    const n=nodes[i];
-    const parent=nodes[9+(i-25)%16];
-    html+=`<line x1="${parent.x.toFixed(1)}" y1="${parent.y.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}"
-      stroke="rgba(80,220,140,0.15)" stroke-width="0.4"/>`;
-  }
-
-  // Nodes
-  nodes.forEach(n => {
-    if (n.core) {
-      html+=`<circle cx="${cx}" cy="${cy}" r="10" fill="rgba(251,191,36,0.85)"
-        style="filter:drop-shadow(0 0 8px rgba(251,191,36,0.4))"/>`;
-    } else {
-      html+=`<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="3"
-        fill="rgba(80,220,140,0.6)" stroke="rgba(80,220,140,0.4)" stroke-width="0.4"/>`;
-    }
-  });
 
   svg.innerHTML = html;
 }
@@ -861,34 +703,34 @@ function seededRng(seed) {
 /* ══════════════════════════════════════════════════════
    ROI CALCULATOR
 ══════════════════════════════════════════════════════ */
+function getValueModel(inputBudget) {
+  const inputValue = Math.round(inputBudget / 1000);
+  const retainedValue = Math.round(inputValue * 0.08);
+  const lostValue = inputValue - retainedValue;
+  return { inputValue, lostValue, retainedValue };
+}
+
 function updateROI() {
-  const b = parseFloat(document.getElementById('roi-slider').value);
-  savedBudget = b;
-  const bK = Math.round(b/1000);
-  const a40K = Math.round(b*0.4/1000);
-  const a8K  = Math.round(b*0.08/1000);
-  const lostK = bK - a8K;
-  document.getElementById('sv').textContent     = bK;
-  document.getElementById('r-in').textContent   = bK+'k Kč';
-  document.getElementById('r-40').textContent   = a40K+'k Kč';
-  document.getElementById('r-8').textContent    = a8K+'k Kč';
-  document.getElementById('r-lost').textContent = lostK+'k Kč';
-  drawFunnel(b);
+  savedBudget = parseFloat(document.getElementById('roi-slider').value);
+  const { inputValue, lostValue, retainedValue } = getValueModel(savedBudget);
+  document.getElementById('sv').textContent     = inputValue;
+  document.getElementById('r-in').textContent   = inputValue+'k Kč';
+  document.getElementById('r-8').textContent    = retainedValue+'k Kč';
+  document.getElementById('r-lost').textContent = lostValue+'k Kč';
+  drawFunnel();
   syncDelta();
 }
 
-function drawFunnel(budget) {
+function drawFunnel() {
   const svg = document.getElementById('svg-funnel');
   if (!svg) return;
   const W=600, H=280;
-  const bK = Math.round(budget/1000);
-  const a40K = Math.round(budget*0.4/1000);
-  const a8K  = Math.round(budget*0.08/1000);
+  const { inputValue, lostValue, retainedValue } = getValueModel(savedBudget);
 
   const bars = [
-    {pct:1,   label:'100% — '+bK+'k Kč', sub:'Vstup kampaně', col:'rgba(255,255,255,0.5)'},
-    {pct:0.4, label:'40% — '+a40K+'k Kč', sub:'Po latenci 12,8s', col:'rgba(255,200,60,0.7)'},
-    {pct:0.08,label:'8% — '+a8K+'k Kč',  sub:'Po 436 bariérách', col:'rgba(255,80,80,0.8)'},
+    {pct:1, label:'VSTUP HODNOTY — '+inputValue+'k Kč', sub:'100 % placené hodnoty vstupuje', col:'rgba(255,255,255,0.55)'},
+    {pct:lostValue / inputValue, label:'ZTRACENÁ HODNOTA — '+lostValue+'k Kč', sub:'leakage uvnitř systému', col:'rgba(255,80,80,0.82)'},
+    {pct:retainedValue / inputValue, label:'UDRŽENÁ HODNOTA — '+retainedValue+'k Kč', sub:'flow, který skutečně dorazí', col:'rgba(80,220,140,0.82)'},
   ];
 
   const maxW = W - 80;
@@ -909,19 +751,15 @@ function drawFunnel(budget) {
 }
 
 function syncDelta() {
-  const b = savedBudget;
-  const bK = Math.round(b/1000);
-  const beforeK = Math.round(b*0.08/1000);
-  const afterK  = Math.round(b*0.95/1000);
-  const diffK   = afterK - beforeK;
+  const { inputValue, lostValue, retainedValue } = getValueModel(savedBudget);
   const budEl = document.getElementById('delta-bud');
   const beEl  = document.getElementById('delta-before');
   const afEl  = document.getElementById('delta-after');
   const diEl  = document.getElementById('delta-diff');
-  if (budEl) budEl.textContent = bK+'k';
-  if (beEl)  beEl.textContent  = beforeK+'k Kč';
-  if (afEl)  afEl.textContent  = afterK+'k Kč';
-  if (diEl)  diEl.textContent  = '+'+diffK+'k Kč';
+  if (budEl) budEl.textContent = inputValue+'k';
+  if (beEl)  beEl.textContent  = lostValue+'k Kč';
+  if (afEl)  afEl.textContent  = retainedValue+'k Kč';
+  if (diEl)  diEl.textContent  = '+'+retainedValue+'k Kč';
 }
 
 function renderOngoingLoss() {
@@ -950,18 +788,16 @@ function startOngoingLossTracker() {
 const BOOT_MSGS = [
   {txt:'Connecting to qm-diagnostics.sys...', cls:''},
   {txt:'[ AUTH ] SSH handshake — complete', cls:'ok'},
-  {txt:'[ SYS ] QM_BLACKBOX_v11 — inicializace modulu', cls:''},
-  {txt:'[ NET ] Skenování topologie domén...', cls:''},
-  {txt:'[ MAP ] Detekováno 171 uzlů v síti', cls:'ok'},
-  {txt:'[ CHK ] Analýza hlavních vstupních bran...', cls:''},
-  {txt:'[ WRN ] 7 kritických uzlů — přetížený stav', cls:'warn'},
-  {txt:'[ LCP ] Měření latence primárního kontejneru...', cls:''},
-  {txt:'[ WRN ] Naměřeno: 12,8s — limit: 2,5s — KRITICKÉ', cls:'warn'},
-  {txt:'[ SCN ] Audit strukturálních anomálií...', cls:''},
+  {txt:'[ SYS ] QM_BLACKBOX_v11 — inicializace průtoku hodnoty', cls:''},
+  {txt:'[ FLOW ] Měření vstupující hodnoty...', cls:''},
+  {txt:'[ WRN ] Detekována aktivní místa úniku', cls:'warn'},
+  {txt:'[ LEAK ] Hodnota opouští systém před doručením', cls:'warn'},
+  {txt:'[ LAT ] Měření ztráty na zpoždění...', cls:''},
+  {txt:'[ WRN ] Naměřeno: 12,8 s — kritická ztráta toku', cls:'warn'},
+  {txt:'[ BARR ] Audit bariér požírajících výkon...', cls:''},
   {txt:'[ WRN ] Identifikováno 436 bariér', cls:'warn'},
-  {txt:'[ ROI ] Výpočet efektivity mediální investice...', cls:''},
-  {txt:'[ WRN ] Efektivita: 8% — kriticky nízká', cls:'warn'},
-  {txt:'[ OK  ] Telemetrie aktivní. Systém připraven.', cls:'ok'},
+  {txt:'[ RET ] Retence hodnoty: 8 %', cls:'warn'},
+  {txt:'[ OK ] Diagnostika leakage dokončena.', cls:'ok'},
 ];
 
 function runBoot() {
@@ -999,6 +835,7 @@ function bootDone() {
   boot.style.transition = 'opacity 0.6s ease';
   boot.style.opacity = '0';
   setTimeout(() => {
+    boot.classList.remove('active');
     boot.style.display = 'none';
     const wrap = document.getElementById('main-wrap');
     wrap.style.display = 'flex';
@@ -1007,7 +844,6 @@ function bootDone() {
     topoBuilt = true;
     setTimeout(scrambleAll, 100);
     updateROI();
-    drawFunnel(150000);
   }, 600);
 }
 
@@ -1033,23 +869,27 @@ class Particle {
 
   reset(width, height, startX) {
     this.x = startX ?? (-20 - Math.random() * width * 0.15);
-    this.y = Math.random() * height;
-    this.size = 0.8 + Math.random() * 2.4;
-    this.speed = 0.8 + Math.random() * 2.2;
-    this.opacity = 0.25 + Math.random() * 0.55;
+    this.size = 1.4 + Math.random() * 1.8;
+    this.speed = 1.3 + Math.random() * 1.3;
     this.baseSpeed = this.speed;
-    this.vy = (Math.random() - 0.5) * 0.5;
-    this.fade = 0.0015 + Math.random() * 0.003;
-    this.laneY = this.y;
+    this.opacity = 0.9;
+    this.laneIndex = Math.floor(Math.random() * Math.max(1, flowLanes.length));
+    this.laneY = flowLanes[this.laneIndex] ?? (Math.random() * height);
+    this.y = this.laneY;
+    this.vx = this.baseSpeed;
+    this.vy = 0;
+    this.integrity = 1;
     this.isStabilized = false;
   }
 
   update(width, height, leakZones) {
     if (this.isStabilized) {
-      this.x += this.baseSpeed * 0.5;
+      this.vx = this.baseSpeed * 0.55;
+      this.x += this.vx;
+      this.y = this.laneY;
       this.vy = 0;
-      this.y += (this.laneY - this.y) * 0.08;
-      this.opacity += (0.72 - this.opacity) * 0.08;
+      this.integrity = 1;
+      this.opacity = 0.88;
 
       if (this.x > width + 30) {
         this.x = -20 - Math.random() * width * 0.12;
@@ -1058,8 +898,7 @@ class Particle {
       return;
     }
 
-    let inLeak = false;
-
+    let leakZone = null;
     for (const zone of leakZones) {
       if (
         this.x >= zone.x &&
@@ -1067,35 +906,46 @@ class Particle {
         this.y >= zone.y &&
         this.y <= zone.y + zone.h
       ) {
-        inLeak = true;
+        leakZone = zone;
         break;
       }
     }
 
-    if (inLeak) {
-      this.x += this.baseSpeed * (1.9 + Math.random() * 1.1);
-      this.vy += (Math.random() - 0.5) * 0.35;
-      this.opacity -= this.fade * 3;
+    if (leakZone) {
+      const zoneCenterY = leakZone.y + leakZone.h / 2;
+      const driftY = this.y < zoneCenterY ? -1 : 1;
+      const leakPullX = (leakZone.x + leakZone.w) - this.x;
+
+      this.vx = this.baseSpeed + Math.max(0.9, leakPullX * 0.03);
+      this.vy += driftY * 0.22;
+      this.x += this.vx;
+      this.y += this.vy;
+      this.integrity -= 0.055;
+      this.opacity = Math.max(0, this.integrity);
     } else {
-      this.x += this.baseSpeed;
-      this.vy += (Math.random() - 0.5) * 0.04;
-      this.opacity -= this.fade;
+      this.vx = this.baseSpeed;
+      this.x += this.vx;
+      this.y += (this.laneY - this.y) * 0.18;
+      this.vy = 0;
+      this.integrity = Math.min(1, this.integrity + 0.025);
+      this.opacity = this.integrity;
     }
 
-    this.vy *= 0.96;
-    this.y += this.vy;
+    const escaped =
+      this.x > width + 35 ||
+      this.y < -35 ||
+      this.y > height + 35 ||
+      this.integrity <= 0.04;
 
-    if (this.y < -20) this.y = height + 20;
-    if (this.y > height + 20) this.y = -20;
-
-    if (this.x > width + 30 || this.opacity <= 0.02) {
+    if (escaped) {
       this.reset(width, height);
     }
   }
 
   draw(ctx) {
     ctx.beginPath();
-    ctx.fillStyle = `rgba(255,255,255,${Math.max(0, this.opacity)})`;
+    const color = this.isStabilized ? '80,220,140' : '255,255,255';
+    ctx.fillStyle = `rgba(${color},${Math.max(0, this.opacity)})`;
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -1122,12 +972,18 @@ function setFlowMode(mode) {
 
   flowParticles.forEach((particle, index) => {
     particle.isStabilized = mode === 'stabilized';
+    particle.laneIndex = index % flowLanes.length;
+    particle.laneY = flowLanes[particle.laneIndex];
+    particle.baseSpeed = particle.speed;
 
     if (mode === 'stabilized') {
-      particle.laneY = flowLanes[index % flowLanes.length];
-      particle.opacity = Math.max(particle.opacity, 0.45);
+      particle.y = particle.laneY;
+      particle.integrity = 1;
+      particle.opacity = 0.88;
+      particle.vy = 0;
     } else {
-      particle.laneY = particle.y;
+      particle.integrity = Math.max(0.65, particle.integrity);
+      particle.opacity = particle.integrity;
     }
   });
 }
@@ -1161,14 +1017,32 @@ function renderFlowFrame() {
   flowCtx.fillRect(0, 0, flowWidth, flowHeight);
 
   const leakZones = flowMode === 'chaotic' ? getLeakZones(flowWidth, flowHeight) : [];
+  const lanes = getFlowLanes(flowHeight);
+
+  flowCtx.fillStyle = flowMode === 'chaotic' ? 'rgba(255,255,255,0.04)' : 'rgba(80,220,140,0.06)';
+  flowCtx.fillRect(0, flowHeight * 0.12, flowWidth * 0.08, flowHeight * 0.76);
+  flowCtx.fillRect(flowWidth * 0.92, flowHeight * 0.12, flowWidth * 0.08, flowHeight * 0.76);
+
+  flowCtx.strokeStyle = flowMode === 'chaotic' ? 'rgba(255,255,255,0.08)' : 'rgba(80,220,140,0.18)';
+  flowCtx.lineWidth = 1;
+  lanes.forEach(y => {
+    flowCtx.beginPath();
+    flowCtx.moveTo(flowWidth * 0.06, y);
+    flowCtx.lineTo(flowWidth * 0.94, y);
+    flowCtx.stroke();
+  });
 
   if (flowMode === 'chaotic') {
-    flowCtx.fillStyle = 'rgba(255,80,80,0.06)';
+    flowCtx.fillStyle = 'rgba(255,80,80,0.1)';
     leakZones.forEach(zone => {
       flowCtx.fillRect(zone.x, zone.y, zone.w, zone.h);
+      flowCtx.strokeStyle = 'rgba(255,80,80,0.28)';
+      flowCtx.strokeRect(zone.x, zone.y, zone.w, zone.h);
     });
+  } else {
+    flowCtx.strokeStyle = 'rgba(80,220,140,0.3)';
+    flowCtx.strokeRect(flowWidth * 0.92, flowHeight * 0.12, flowWidth * 0.08, flowHeight * 0.76);
   }
-
   return leakZones;
 }
 
