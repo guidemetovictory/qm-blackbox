@@ -145,6 +145,28 @@ body::after {
 .p-tab.active .p-tab-dot { background:var(--text-main); box-shadow:0 0 6px rgba(255,255,255,0.4); }
 .p-tab.done .p-tab-dot { background:rgba(80,220,140,0.7); }
 
+#ongoing-loss-tracker {
+  width:100%;
+  max-width:900px;
+  margin:18px auto 0;
+  padding:0 clamp(20px,5vw,60px);
+  color:rgba(255,80,80,0.8);
+  font-family:var(--font-mono);
+  font-size:0.9rem;
+  letter-spacing:0.03em;
+}
+#ongoing-loss-tracker strong {
+  font-weight:600;
+  color:rgba(255,255,255,0.45);
+}
+#ongoing-loss-value {
+  display:inline-block;
+  min-width:92px;
+}
+#ongoing-loss-value.loss-pulse {
+  animation:loss-pulse 0.18s ease-out;
+}
+
 /* ═══ CONTENT AREA ═══ */
 .content {
   width:100%; max-width:900px; margin:0 auto;
@@ -196,6 +218,24 @@ hr { border:none; border-top:1px solid var(--border-subtle); margin:28px 0; }
 .data-val.fail { color:var(--status-fail); }
 .data-val.ok { color:var(--status-ok); }
 .data-val.accent { color:var(--accent); }
+
+#phase-2 .data-row:nth-last-child(-n+3) .data-val {
+  font-size:clamp(2.5rem, 5vw, 3rem);
+  font-weight:900;
+  letter-spacing:-0.02em;
+  color:var(--text-main);
+  text-shadow:0 8px 24px rgba(0,0,0,0.35);
+  line-height:1;
+}
+#phase-2 .data-row:last-child .data-val {
+  color:var(--accent);
+}
+#phase-2.phase-settling .data-row:nth-last-child(-n+3) .data-val {
+  animation:delta-settle-in 0.6s cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+#phase-2.phase-settling .data-row:nth-last-child(3) .data-val { animation-delay:0.04s; }
+#phase-2.phase-settling .data-row:nth-last-child(2) .data-val { animation-delay:0.1s; }
+#phase-2.phase-settling .data-row:nth-last-child(1) .data-val { animation-delay:0.16s; }
 
 /* ═══ SLIDER ═══ */
 .slider-wrap { margin:28px 0; }
@@ -261,6 +301,32 @@ input[type=range]::-webkit-slider-thumb {
 @keyframes scatter { 0%,100%{opacity:0.5} 50%{opacity:0.05} }
 @keyframes pulse-ring { 0%{r:14;opacity:0.7} 100%{r:26;opacity:0} }
 @keyframes node-heal { from{fill:rgba(255,80,80,0.8)} to{fill:rgba(80,220,140,0.7)} }
+@keyframes loss-pulse {
+  0% { transform:translateX(0) scale(1); opacity:0.85; }
+  25% { transform:translateX(-0.7px) scale(1.03); opacity:1; }
+  50% { transform:translateX(0.9px) scale(1.04); opacity:1; }
+  100% { transform:translateX(0) scale(1); opacity:1; }
+}
+@keyframes delta-settle-in {
+  from { opacity:0; transform:translateY(10px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.flow-wrap {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  background: #080808;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+#flow-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 </style>
 </head>
 <body>
@@ -298,6 +364,10 @@ input[type=range]::-webkit-slider-thumb {
       </div>
     </div>
 
+    <div id="ongoing-loss-tracker">
+      <strong>PRŮBĚŽNÁ ZTRÁTA:</strong> <span id="ongoing-loss-value">0.00 Kč</span>
+    </div>
+
     <!-- ═══ PHASE 0: TOPOLOGIE ═══ -->
     <div class="phase active" id="phase-0">
       <div class="content">
@@ -311,7 +381,9 @@ input[type=range]::-webkit-slider-thumb {
         </div>
 
         <div class="svg-wrap">
-          <svg id="svg-chaos" class="topo-svg" viewBox="0 0 700 460"></svg>
+          <div class="flow-wrap">
+            <canvas id="flow-canvas"></canvas>
+          </div>
         </div>
 
         <div style="margin:24px 0;">
@@ -362,6 +434,7 @@ input[type=range]::-webkit-slider-thumb {
           <div class="data-row"><span class="data-key">REÁLNÁ EFEKTIVITA</span><span class="data-val fail">8%</span></div>
           <div class="data-row"><span class="data-key">INVESTICE DO VAKUA</span><span class="data-val fail" id="r-lost">138k Kč</span></div>
         </div>
+
 
         <div class="btn-row">
           <button class="opt-btn" onclick="prevPhase()">[ ← ZPĚT ]</button>
@@ -513,10 +586,14 @@ let currentPhase = 0;
 let savedBudget = 150000;
 let topoBuilt = false;
 let splitBuilt = false;
+let totalLossAccumulated = 0;
+let ongoingLossInterval = null;
 
 const phaseLabels = ['FÁZE_01','FÁZE_02','FÁZE_03','FÁZE_04'];
 
 function showPhase(n) {
+  const phase2El = document.getElementById('phase-2');
+
   document.querySelectorAll('.phase').forEach((el,i) => {
     el.classList.toggle('active', i === n);
   });
@@ -528,6 +605,23 @@ function showPhase(n) {
   document.getElementById('phase-id-label').textContent = `[ ${phaseLabels[n]} ]`;
   window.scrollTo({top:0,behavior:'smooth'});
   setTimeout(scrambleAll, 60);
+
+  if (phase2El) phase2El.classList.remove('phase-settling');
+
+  if (n === 0) {
+    setFlowMode('chaotic');
+    startFlowAnimation();
+  } else if (n === 2) {
+    setFlowMode('stabilized');
+    startFlowAnimation();
+  } else {
+    stopFlowAnimation();
+  }
+
+  if (n === 2 && phase2El) {
+    void phase2El.offsetWidth;
+    phase2El.classList.add('phase-settling');
+  }
 
   if (n===0 && !topoBuilt) { buildChaosTopology('svg-chaos',700,460,false); topoBuilt=true; }
   if (n===2 && !splitBuilt) {
@@ -830,6 +924,26 @@ function syncDelta() {
   if (diEl)  diEl.textContent  = '+'+diffK+'k Kč';
 }
 
+function renderOngoingLoss() {
+  const lossEl = document.getElementById('ongoing-loss-value');
+  if (!lossEl) return;
+
+  lossEl.textContent = `${totalLossAccumulated.toFixed(2)} Kč`;
+  lossEl.classList.remove('loss-pulse');
+  void lossEl.offsetWidth;
+  lossEl.classList.add('loss-pulse');
+}
+
+function startOngoingLossTracker() {
+  if (ongoingLossInterval) return;
+
+  renderOngoingLoss();
+  ongoingLossInterval = setInterval(() => {
+    totalLossAccumulated += 0.042;
+    renderOngoingLoss();
+  }, 100);
+}
+
 /* ══════════════════════════════════════════════════════
    BOOT SEQUENCE
 ══════════════════════════════════════════════════════ */
@@ -898,8 +1012,236 @@ function bootDone() {
 }
 
 /* ══════════════════════════════════════════════════════
+   FLOW CANVAS
+══════════════════════════════════════════════════════ */
+let flowCanvas = null;
+let flowCtx = null;
+let flowWrap = null;
+let flowParticles = [];
+let flowAnimationId = null;
+let isAnimating = false;
+let flowMode = 'chaotic';
+let flowLanes = [];
+let flowWidth = 0;
+let flowHeight = 0;
+let flowDpr = 1;
+
+class Particle {
+  constructor(width, height) {
+    this.reset(width, height, Math.random() * width);
+  }
+
+  reset(width, height, startX) {
+    this.x = startX ?? (-20 - Math.random() * width * 0.15);
+    this.y = Math.random() * height;
+    this.size = 0.8 + Math.random() * 2.4;
+    this.speed = 0.8 + Math.random() * 2.2;
+    this.opacity = 0.25 + Math.random() * 0.55;
+    this.baseSpeed = this.speed;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.fade = 0.0015 + Math.random() * 0.003;
+    this.laneY = this.y;
+    this.isStabilized = false;
+  }
+
+  update(width, height, leakZones) {
+    if (this.isStabilized) {
+      this.x += this.baseSpeed * 0.5;
+      this.vy = 0;
+      this.y += (this.laneY - this.y) * 0.08;
+      this.opacity += (0.72 - this.opacity) * 0.08;
+
+      if (this.x > width + 30) {
+        this.x = -20 - Math.random() * width * 0.12;
+        this.y = this.laneY;
+      }
+      return;
+    }
+
+    let inLeak = false;
+
+    for (const zone of leakZones) {
+      if (
+        this.x >= zone.x &&
+        this.x <= zone.x + zone.w &&
+        this.y >= zone.y &&
+        this.y <= zone.y + zone.h
+      ) {
+        inLeak = true;
+        break;
+      }
+    }
+
+    if (inLeak) {
+      this.x += this.baseSpeed * (1.9 + Math.random() * 1.1);
+      this.vy += (Math.random() - 0.5) * 0.35;
+      this.opacity -= this.fade * 3;
+    } else {
+      this.x += this.baseSpeed;
+      this.vy += (Math.random() - 0.5) * 0.04;
+      this.opacity -= this.fade;
+    }
+
+    this.vy *= 0.96;
+    this.y += this.vy;
+
+    if (this.y < -20) this.y = height + 20;
+    if (this.y > height + 20) this.y = -20;
+
+    if (this.x > width + 30 || this.opacity <= 0.02) {
+      this.reset(width, height);
+    }
+  }
+
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(255,255,255,${Math.max(0, this.opacity)})`;
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function getLeakZones(width, height) {
+  return [
+    { x: width * 0.28, y: height * 0.12, w: width * 0.14, h: height * 0.72 },
+    { x: width * 0.68, y: height * 0.2,  w: width * 0.16, h: height * 0.58 }
+  ];
+}
+
+function getFlowLanes(height) {
+  const laneCount = 9;
+  const top = height * 0.18;
+  const bottom = height * 0.82;
+  const step = (bottom - top) / (laneCount - 1);
+  return Array.from({ length: laneCount }, (_, i) => top + step * i);
+}
+
+function setFlowMode(mode) {
+  flowMode = mode;
+  flowLanes = getFlowLanes(flowHeight);
+
+  flowParticles.forEach((particle, index) => {
+    particle.isStabilized = mode === 'stabilized';
+
+    if (mode === 'stabilized') {
+      particle.laneY = flowLanes[index % flowLanes.length];
+      particle.opacity = Math.max(particle.opacity, 0.45);
+    } else {
+      particle.laneY = particle.y;
+    }
+  });
+}
+
+function resizeFlowCanvas() {
+  if (!flowCanvas || !flowWrap) return;
+
+  const rect = flowWrap.getBoundingClientRect();
+  flowWidth = Math.max(1, Math.floor(rect.width));
+  flowHeight = Math.max(1, Math.floor(rect.height));
+  flowDpr = window.devicePixelRatio || 1;
+
+  flowCanvas.width = Math.floor(flowWidth * flowDpr);
+  flowCanvas.height = Math.floor(flowHeight * flowDpr);
+  flowCtx.setTransform(flowDpr, 0, 0, flowDpr, 0, 0);
+}
+
+function initFlowParticles() {
+  flowParticles = [];
+  const count = 180;
+  for (let i = 0; i < count; i++) {
+    flowParticles.push(new Particle(flowWidth, flowHeight));
+  }
+}
+
+function renderFlowFrame() {
+  if (!flowCtx || !flowCanvas) return;
+
+  flowCtx.clearRect(0, 0, flowWidth, flowHeight);
+  flowCtx.fillStyle = '#080808';
+  flowCtx.fillRect(0, 0, flowWidth, flowHeight);
+
+  const leakZones = flowMode === 'chaotic' ? getLeakZones(flowWidth, flowHeight) : [];
+
+  if (flowMode === 'chaotic') {
+    flowCtx.fillStyle = 'rgba(255,80,80,0.06)';
+    leakZones.forEach(zone => {
+      flowCtx.fillRect(zone.x, zone.y, zone.w, zone.h);
+    });
+  }
+
+  return leakZones;
+}
+
+function animateFlow() {
+  if (!flowCtx || !flowCanvas || !isAnimating) return;
+
+  const leakZones = renderFlowFrame();
+
+  flowParticles.forEach(particle => {
+    particle.update(flowWidth, flowHeight, leakZones);
+    particle.draw(flowCtx);
+  });
+
+  flowAnimationId = requestAnimationFrame(animateFlow);
+}
+
+function startFlowAnimation() {
+  if (!flowCtx || isAnimating) return;
+  isAnimating = true;
+  animateFlow();
+}
+
+function stopFlowAnimation() {
+  isAnimating = false;
+  if (flowAnimationId) {
+    cancelAnimationFrame(flowAnimationId);
+    flowAnimationId = null;
+  }
+  renderFlowFrame();
+  flowParticles.forEach(particle => particle.draw(flowCtx));
+}
+
+function initFlowCanvas() {
+  flowCanvas = document.getElementById('flow-canvas');
+  flowWrap = flowCanvas ? flowCanvas.closest('.flow-wrap') : null;
+  if (!flowCanvas || !flowWrap) return;
+
+  flowCtx = flowCanvas.getContext('2d');
+  if (!flowCtx) return;
+
+  resizeFlowCanvas();
+  initFlowParticles();
+  setFlowMode(currentPhase === 2 ? 'stabilized' : 'chaotic');
+  renderFlowFrame();
+  flowParticles.forEach(particle => particle.draw(flowCtx));
+
+  if (currentPhase === 0 || currentPhase === 2) startFlowAnimation();
+  else stopFlowAnimation();
+
+  window.addEventListener('resize', () => {
+    resizeFlowCanvas();
+    flowLanes = getFlowLanes(flowHeight);
+    flowParticles.forEach((particle, index) => {
+      if (particle.isStabilized) {
+        particle.laneY = flowLanes[index % flowLanes.length];
+      }
+    });
+    initFlowParticles();
+    setFlowMode(flowMode);
+    renderFlowFrame();
+    flowParticles.forEach(particle => particle.draw(flowCtx));
+    if (isAnimating) {
+      stopFlowAnimation();
+      startFlowAnimation();
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', startOngoingLossTracker);
+window.addEventListener('DOMContentLoaded', initFlowCanvas);
 window.addEventListener('DOMContentLoaded', runBoot);
 </script>
 </body>
