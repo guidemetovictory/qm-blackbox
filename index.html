@@ -8,9 +8,10 @@
 <style>
 /* ═══ QM TOKENS (sourced from tokens.css + style.css) ═══ */
 :root {
-  --bg-dark: #080808;
+  --bg-dark: #0d0d0d;
+  --bg-panel: #070707;
   --text-main: #ffffff;
-  --text-dim: rgba(255,255,255,0.5);
+  --text-dim: rgba(255,255,255,0.72);
   --text-secondary: rgba(255,255,255,0.2);
   --accent: #fbbf24;
   --border-subtle: rgba(255,255,255,0.1);
@@ -91,7 +92,7 @@ body::after {
 .boot-terminal {
   width:100%; max-width:640px;
   border:1px solid var(--border-subtle);
-  background:rgba(255,255,255,0.01);
+  background:var(--bg-panel);
   position:relative; overflow:hidden;
 }
 .boot-terminal::before {
@@ -203,7 +204,8 @@ hr { border:none; border-top:1px solid var(--border-subtle); margin:28px 0; }
 /* ═══ NOTE BLOCK (plain, no color) ═══ */
 .note {
   border-left:1px solid var(--border-subtle); padding:14px 18px;
-  margin:20px 0; font-size:11px; line-height:1.7; color:var(--text-dim);
+  margin:16px 0; font-size:11px; line-height:1.7; color:var(--text-dim);
+  background:rgba(0,0,0,0.2);
 }
 
 /* ═══ DATA TABLE ═══ */
@@ -258,7 +260,7 @@ input[type=range]::-webkit-slider-thumb {
 /* ═══ SPLIT SCREEN ═══ */
 .split { display:grid; grid-template-columns:1fr 1fr; gap:1px; margin:32px 0; background:var(--border-subtle); }
 @media(max-width:600px) { .split { grid-template-columns:1fr; } }
-.split-panel { padding:28px; background:var(--bg-dark); }
+.split-panel { padding:28px; background:var(--bg-panel); }
 .split-label {
   font-size:9px; letter-spacing:0.25em; text-transform:uppercase;
   margin-bottom:20px; display:block;
@@ -282,7 +284,7 @@ input[type=range]::-webkit-slider-thumb {
   display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
   gap:1px; background:var(--border-subtle); margin:32px 0;
 }
-.contact-cell { padding:28px; background:var(--bg-dark); }
+.contact-cell { padding:28px; background:var(--bg-panel); }
 .contact-cell-label { font-size:9px; letter-spacing:0.25em; color:var(--text-secondary); text-transform:uppercase; margin-bottom:12px; display:block; }
 .contact-cell-val { font-size:12px; line-height:1.7; color:var(--text-dim); }
 .contact-cell-val a { color:var(--text-main); text-decoration:none; }
@@ -315,18 +317,25 @@ input[type=range]::-webkit-slider-thumb {
 .flow-wrap {
   position: relative;
   width: 100%;
-  height: 420px;
-  background: #080808;
+  height: clamp(360px, 54vh, 500px);
+  min-height: 360px;
+  background: var(--bg-panel);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
-  margin: 20px 0;
+  margin: 10px 0 16px;
   overflow: hidden;
+  z-index: 2;
 }
 #flow-canvas {
   width: 100%;
   height: 100%;
   display: block;
+  opacity: 1;
+  visibility: visible;
 }
+
+#phase-0 .content { padding-top:clamp(18px,3.4vw,28px); }
+#phase-0 .svg-wrap { margin:10px 0 18px; }
 </style>
 </head>
 <body>
@@ -376,14 +385,14 @@ input[type=range]::-webkit-slider-thumb {
 
         <p>Hodnota vstupuje do systému, ale část se ztrácí dřív, než dorazí k zákazníkovi. Každé zdržení a každý únik snižuje výkon, který už dnes platíte.</p>
 
-        <div class="note">
-          <strong>LEAKAGE</strong> — Bílé částice jsou hodnota Vaší poptávky. Pokud zeslábnou, rozptýlí se nebo zmizí v červených zónách, znamená to ztracený dosah, ztracenou důvěru a ztracené peníze.
-        </div>
-
         <div class="svg-wrap">
           <div class="flow-wrap">
             <canvas id="flow-canvas"></canvas>
           </div>
+        </div>
+
+        <div class="note">
+          <strong>LEAKAGE</strong> — Bílé částice jsou hodnota Vaší poptávky. Pokud zeslábnou, rozptýlí se nebo zmizí v červených zónách, znamená to ztracený dosah, ztracenou důvěru a ztracené peníze.
         </div>
 
         <div style="margin:24px 0;">
@@ -595,6 +604,7 @@ function showPhase(n) {
   if (phase2El) phase2El.classList.remove('phase-settling');
 
   if (n === 0) {
+    ensureFlowCanvasReady();
     setFlowMode('chaotic');
     startFlowAnimation();
   } else if (n === 2) {
@@ -844,6 +854,10 @@ function bootDone() {
     topoBuilt = true;
     setTimeout(scrambleAll, 100);
     updateROI();
+    if (flowCtx) {
+      ensureFlowCanvasReady();
+      startFlowAnimation();
+    }
   }, 600);
 }
 
@@ -861,6 +875,7 @@ let flowLanes = [];
 let flowWidth = 0;
 let flowHeight = 0;
 let flowDpr = 1;
+let flowDebugMarkerDrawn = false;
 
 class Particle {
   constructor(width, height) {
@@ -869,10 +884,10 @@ class Particle {
 
   reset(width, height, startX) {
     this.x = startX ?? (-20 - Math.random() * width * 0.15);
-    this.size = 1.4 + Math.random() * 1.8;
+    this.size = 1.8 + Math.random() * 2.2;
     this.speed = 1.3 + Math.random() * 1.3;
     this.baseSpeed = this.speed;
-    this.opacity = 0.9;
+    this.opacity = 0.94;
     this.laneIndex = Math.floor(Math.random() * Math.max(1, flowLanes.length));
     this.laneY = flowLanes[this.laneIndex] ?? (Math.random() * height);
     this.y = this.laneY;
@@ -889,7 +904,7 @@ class Particle {
       this.y = this.laneY;
       this.vy = 0;
       this.integrity = 1;
-      this.opacity = 0.88;
+      this.opacity = 0.92;
 
       if (this.x > width + 30) {
         this.x = -20 - Math.random() * width * 0.12;
@@ -920,14 +935,14 @@ class Particle {
       this.vy += driftY * 0.22;
       this.x += this.vx;
       this.y += this.vy;
-      this.integrity -= 0.055;
+      this.integrity -= 0.08;
       this.opacity = Math.max(0, this.integrity);
     } else {
       this.vx = this.baseSpeed;
       this.x += this.vx;
       this.y += (this.laneY - this.y) * 0.18;
       this.vy = 0;
-      this.integrity = Math.min(1, this.integrity + 0.025);
+      this.integrity = Math.min(1, this.integrity + 0.02);
       this.opacity = this.integrity;
     }
 
@@ -1001,6 +1016,36 @@ function resizeFlowCanvas() {
   flowCtx.setTransform(flowDpr, 0, 0, flowDpr, 0, 0);
 }
 
+function drawFlowDebugMarker() {
+  if (!flowCtx || flowDebugMarkerDrawn) return;
+  flowCtx.fillStyle = 'rgba(20,255,120,0.9)';
+  flowCtx.fillRect(10, 10, 90, 24);
+  flowDebugMarkerDrawn = true;
+}
+
+function ensureFlowCanvasReady(attempt = 0) {
+  if (!flowCanvas || !flowWrap || !flowCtx) return;
+
+  flowWrap.style.display = 'block';
+  flowWrap.style.opacity = '1';
+  flowCanvas.style.display = 'block';
+  flowCanvas.style.opacity = '1';
+
+  resizeFlowCanvas();
+  const rect = flowWrap.getBoundingClientRect();
+  const invalidSize = rect.width <= 0 || rect.height <= 0 || flowCanvas.width <= 1 || flowCanvas.height <= 1;
+
+  if (invalidSize && attempt < 12) {
+    requestAnimationFrame(() => ensureFlowCanvasReady(attempt + 1));
+    return;
+  }
+
+  if (!flowParticles.length) initFlowParticles();
+  renderFlowFrame();
+  drawFlowDebugMarker();
+  flowParticles.forEach(particle => particle.draw(flowCtx));
+}
+
 function initFlowParticles() {
   flowParticles = [];
   const count = 180;
@@ -1033,10 +1078,10 @@ function renderFlowFrame() {
   });
 
   if (flowMode === 'chaotic') {
-    flowCtx.fillStyle = 'rgba(255,80,80,0.1)';
+    flowCtx.fillStyle = 'rgba(255,80,80,0.18)';
     leakZones.forEach(zone => {
       flowCtx.fillRect(zone.x, zone.y, zone.w, zone.h);
-      flowCtx.strokeStyle = 'rgba(255,80,80,0.28)';
+      flowCtx.strokeStyle = 'rgba(255,80,80,0.46)';
       flowCtx.strokeRect(zone.x, zone.y, zone.w, zone.h);
     });
   } else {
@@ -1083,8 +1128,8 @@ function initFlowCanvas() {
   flowCtx = flowCanvas.getContext('2d');
   if (!flowCtx) return;
 
-  resizeFlowCanvas();
-  initFlowParticles();
+  ensureFlowCanvasReady();
+  if (!flowParticles.length) initFlowParticles();
   setFlowMode(currentPhase === 2 ? 'stabilized' : 'chaotic');
   renderFlowFrame();
   flowParticles.forEach(particle => particle.draw(flowCtx));
